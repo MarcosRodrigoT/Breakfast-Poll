@@ -236,13 +236,13 @@ elif menu == "History":
             formatted_date = format_date(record["Date"])
             with st.expander(f"{formatted_date}"):
                 st.markdown("#### Selections")
-                st.dataframe(record["Selection"], hide_index=True)
+                st.dataframe(record["Selection"], hide_index=True, use_container_width=True)
                 st.markdown("#### Bar")
-                st.dataframe(record["Bar"], hide_index=True)
+                st.dataframe(record["Bar"], hide_index=True, use_container_width=True)
                 st.markdown("#### Machine")
-                st.dataframe(record["Machine"], hide_index=True)
+                st.dataframe(record["Machine"], hide_index=True, use_container_width=True)
                 st.markdown("#### Debts")
-                st.dataframe(record["Debts"], hide_index=True)
+                st.dataframe(record["Debts"], hide_index=True, use_container_width=True)
 
     else:
         st.write("No history records found.")
@@ -258,7 +258,7 @@ elif menu == "Current":
 
     # Load the current selections from the session state or from the file
     current_df = load_current_selections()
-    st.dataframe(current_df, hide_index=True)
+    st.dataframe(current_df, hide_index=True, use_container_width=True)
 
     # Define item prices and categories
     item_prices = {
@@ -515,13 +515,13 @@ elif menu == "Current":
         filtered_machine = ticket_df[ticket_df["Amount"] > 0]
 
         st.subheader("Items to ask at the bar")
-        st.dataframe(filtered_bar, hide_index=True)
+        st.dataframe(filtered_bar, hide_index=True, use_container_width=True)
 
         st.subheader("Paying Ticket")
-        st.dataframe(filtered_machine, hide_index=True)
+        st.dataframe(filtered_machine, hide_index=True, use_container_width=True)
 
         st.subheader("Settle Up Ticket")
-        st.dataframe(debts_ticket, hide_index=True)
+        st.dataframe(debts_ticket, hide_index=True, use_container_width=True)
 
         # Calculate and display the total price
         total_price = sum([float(price) for price in debts_ticket["Spent"]])
@@ -558,7 +558,7 @@ elif menu == "Current":
 
             # Reload the current selections to show an empty table
             current_df = pd.DataFrame(columns=["Name", "Drinks", "Food"])
-            st.dataframe(current_df, hide_index=True)
+            st.dataframe(current_df, hide_index=True, use_container_width=True)
 
 # History view to check past summaries
 elif menu == "History":
@@ -572,7 +572,7 @@ elif menu == "History":
         # Display history in reverse chronological order
         for record in reversed(st.session_state.history):
             st.subheader(f"Date: {record['Date']}")
-            st.dataframe(record["Summary"], hide_index=True)
+            st.dataframe(record["Summary"], hide_index=True, use_container_width=True)
 
     else:
         st.write("No history records found.")
