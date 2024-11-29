@@ -28,6 +28,13 @@ if "history" not in st.session_state:
     st.session_state.history = []
 
 
+# Helper function to format the date
+def format_date(date_str):
+    original_format = datetime.strptime(date_str, "%Y-%m-%d_%H-%M-%S")  # Convert string to datetime object
+    formatted_date = original_format.strftime("%B %d, %Y - %H:%M:%S")  # Format to "November 29, 2024 - 15:50:34"
+    return formatted_date
+
+
 # Load temporary selections from the local file
 def load_current_selections():
     if os.path.exists(SELECTION_FILE):
@@ -53,16 +60,29 @@ def save_current_selection_to_file(current_selections):
 # Load history from the local directory
 def load_history():
     history = []
-    if not os.path.exists(HISTORY_DIR):
-        os.makedirs(HISTORY_DIR)
 
-    history_files = [f for f in os.listdir(HISTORY_DIR) if f.endswith(".txt")]
+    history_dirs = [d for d in os.listdir(HISTORY_DIR) if os.path.isdir(os.path.join(HISTORY_DIR, d))]
 
-    for file in history_files:
-        file_path = os.path.join(HISTORY_DIR, file)
-        summary_df = pd.read_csv(file_path)
-        date = file.split(".txt")[0]
-        history.append({"Date": date, "Summary": summary_df})
+    for directory in history_dirs:
+        dir_path = os.path.join(HISTORY_DIR, directory)
+
+        selection_df = pd.read_csv(os.path.join(dir_path, SELECTION_FILE.split("/")[-1]))
+        bar_df = pd.read_csv(os.path.join(dir_path, BAR_FILE.split("/")[-1]))
+        machine_df = pd.read_csv(os.path.join(dir_path, MACHINE_FILE.split("/")[-1]))
+        debts_df = pd.read_csv(os.path.join(dir_path, DEBTS_FILE.split("/")[-1]))
+
+        # Format prices to show only 2 decimals
+        debts_df["Spent"] = debts_df["Spent"].apply(lambda x: f"{x:.2f}")
+
+        history.append(
+            {
+                "Date": directory,
+                "Selection": selection_df,
+                "Bar": bar_df,
+                "Machine": machine_df,
+                "Debts": debts_df,
+            }
+        )
     return history
 
 
@@ -100,7 +120,10 @@ if "history" not in st.session_state:
     st.session_state.current_selections = load_current_selections().to_dict(orient="records")
 
 # Sidebar for navigating through different views
-menu = st.sidebar.selectbox("Select View", ["Poll", "Current", "History", "Graph"])
+menu = st.sidebar.selectbox("Select View", ["Poll", "Current", "History"])
+
+# TODO: Implement at some point
+# menu = st.sidebar.selectbox("Select View", ["Poll", "Current", "History", "Graph"])
 
 
 # Function to reset the current selections after submission
@@ -200,15 +223,27 @@ if menu == "Poll":
 elif menu == "History":
     st.title("Breakfast Poll History")
 
-    # Reload history if it's not already loaded
-    if not st.session_state.history:
-        st.session_state.history = load_history()
+    # Load history if it's not already loaded
+    st.session_state.history = load_history()
+
+    # Sort history by the Date key in descending order
+    st.session_state.history = sorted(st.session_state.history, key=lambda x: datetime.strptime(x["Date"], "%Y-%m-%d_%H-%M-%S"), reverse=True)
 
     if st.session_state.history:
         # Display history in reverse chronological order
-        for record in reversed(st.session_state.history):
-            st.subheader(f"Date: {record['Date']}")
-            st.table(record["Summary"])
+        for record in st.session_state.history:
+            # Format the date for display
+            formatted_date = format_date(record["Date"])
+            with st.expander(f"{formatted_date}"):
+                st.markdown("#### Selections")
+                st.dataframe(record["Selection"], hide_index=True)
+                st.markdown("#### Bar")
+                st.dataframe(record["Bar"], hide_index=True)
+                st.markdown("#### Machine")
+                st.dataframe(record["Machine"], hide_index=True)
+                st.markdown("#### Debts")
+                st.dataframe(record["Debts"], hide_index=True)
+
     else:
         st.write("No history records found.")
 
@@ -223,7 +258,7 @@ elif menu == "Current":
 
     # Load the current selections from the session state or from the file
     current_df = load_current_selections()
-    st.table(current_df)
+    st.dataframe(current_df, hide_index=True)
 
     # Define item prices and categories
     item_prices = {
@@ -462,21 +497,31 @@ elif menu == "Current":
         ticket_df = pd.DataFrame.from_dict(item_association, orient="index", columns=["Amount"])
         debts_ticket = pd.DataFrame.from_dict(user_association, orient="index", columns=["Spent"])
 
+        # Format prices to show only 2 decimals
+        debts_ticket["Spent"] = debts_ticket["Spent"].apply(lambda x: f"{x:.2f}")
+
+        # Change indexes
+        bar_selection = bar_selection.reset_index()
+        ticket_df = ticket_df.reset_index()
+        debts_ticket = debts_ticket.reset_index()
+
+        # Rename the columns for clarity
+        bar_selection.columns = ["Item", "Amount"]
+        ticket_df.columns = ["Item", "Amount"]
+        debts_ticket.columns = ["Name", "Spent"]
+
         # Filter rows to exclude zero amounts
         filtered_bar = bar_selection[bar_selection.index != "Nada"]
         filtered_machine = ticket_df[ticket_df["Amount"] > 0]
 
-        # Format prices to show only 2 decimals
-        debts_ticket["Spent"] = debts_ticket["Spent"].apply(lambda x: f"{x:.2f}")
-
         st.subheader("Items to ask at the bar")
-        st.table(filtered_bar)
+        st.dataframe(filtered_bar, hide_index=True)
 
         st.subheader("Paying Ticket")
-        st.table(filtered_machine)
+        st.dataframe(filtered_machine, hide_index=True)
 
         st.subheader("Settle Up Ticket")
-        st.table(debts_ticket)
+        st.dataframe(debts_ticket, hide_index=True)
 
         # Calculate and display the total price
         total_price = sum([float(price) for price in debts_ticket["Spent"]])
@@ -513,7 +558,7 @@ elif menu == "Current":
 
             # Reload the current selections to show an empty table
             current_df = pd.DataFrame(columns=["Name", "Drinks", "Food"])
-            st.table(current_df)
+            st.dataframe(current_df, hide_index=True)
 
 # History view to check past summaries
 elif menu == "History":
@@ -527,100 +572,102 @@ elif menu == "History":
         # Display history in reverse chronological order
         for record in reversed(st.session_state.history):
             st.subheader(f"Date: {record['Date']}")
-            st.table(record["Summary"])
+            st.dataframe(record["Summary"], hide_index=True)
+
     else:
         st.write("No history records found.")
 
-# Graph view to display a line chart of item selections over time
-elif menu == "Graph":
-    st.title("Breakfast Poll History - Graph View")
+# TODO: Implement at some point
+# # Graph view to display a line chart of item selections over time
+# elif menu == "Graph":
+#     st.title("Breakfast Poll History - Graph View")
 
-    # Load the history if not already loaded
-    if not st.session_state.history:
-        st.session_state.history = load_history()
+#     # Load the history if not already loaded
+#     if not st.session_state.history:
+#         st.session_state.history = load_history()
 
-    # Prepare data for plotting
-    if st.session_state.history:
-        history_data = []
-        user_data = {}  # Store user-specific data
+#     # Prepare data for plotting
+#     if st.session_state.history:
+#         history_data = []
+#         user_data = {}  # Store user-specific data
 
-        for record in st.session_state.history:
-            # Extract only the date part (YYYY-MM-DD) for display
-            date = record["Date"].split("_")[0]  # Use only the YYYY-MM-DD portion of the date
-            for index, row in record["Summary"].iterrows():
-                user = row["Name"]
-                for drink in row["Drinks"].split(", "):
-                    history_data.append({"Date": date, "Item": drink, "Type": "Drink", "User": user})
-                for food in row["Food"].split(", "):
-                    history_data.append({"Date": date, "Item": food, "Type": "Food", "User": user})
+#         for record in st.session_state.history:
+#             # Extract only the date part (YYYY-MM-DD) for display
+#             date = record["Date"].split("_")[0]  # Use only the YYYY-MM-DD portion of the date
+#             for index, row in record["Summary"].iterrows():
+#                 user = row["Name"]
+#                 for drink in row["Drinks"].split(", "):
+#                     history_data.append({"Date": date, "Item": drink, "Type": "Drink", "User": user})
+#                 for food in row["Food"].split(", "):
+#                     history_data.append({"Date": date, "Item": food, "Type": "Food", "User": user})
 
-                # Append user data for selection
-                if user not in user_data:
-                    user_data[user] = True  # Initialize all users as visible by default
+#                 # Append user data for selection
+#                 if user not in user_data:
+#                     user_data[user] = True  # Initialize all users as visible by default
 
-        # Create a DataFrame from history data
-        history_df = pd.DataFrame(history_data)
+#         # Create a DataFrame from history data
+#         history_df = pd.DataFrame(history_data)
 
-        # Count occurrences of each item per date
-        item_counts = history_df.groupby(["Date", "Item", "Type", "User"]).size().reset_index(name="Count")
+#         # Count occurrences of each item per date
+#         item_counts = history_df.groupby(["Date", "Item", "Type", "User"]).size().reset_index(name="Count")
 
-        # Separate items into Drinks and Food, and sort them alphabetically
-        drinks = sorted(item_counts[item_counts["Type"] == "Drink"]["Item"].unique())
-        foods = sorted(item_counts[item_counts["Type"] == "Food"]["Item"].unique())
+#         # Separate items into Drinks and Food, and sort them alphabetically
+#         drinks = sorted(item_counts[item_counts["Type"] == "Drink"]["Item"].unique())
+#         foods = sorted(item_counts[item_counts["Type"] == "Food"]["Item"].unique())
 
-        # Create a dictionary to store the checkbox values for each item
-        item_visibility = {}
+#         # Create a dictionary to store the checkbox values for each item
+#         item_visibility = {}
 
-        # Create interactive checkboxes for Drinks, Food, and Users in the sidebar
-        st.sidebar.header("Select Items to Display")
+#         # Create interactive checkboxes for Drinks, Food, and Users in the sidebar
+#         st.sidebar.header("Select Items to Display")
 
-        # Drinks Section
-        if drinks:
-            st.sidebar.subheader("Drinks")
-            for item in drinks:
-                # Add a unique key to each checkbox to avoid duplicate widget IDs
-                item_visibility[item] = st.sidebar.checkbox(item, value=True, key=f"checkbox_{item}_Drink")
+#         # Drinks Section
+#         if drinks:
+#             st.sidebar.subheader("Drinks")
+#             for item in drinks:
+#                 # Add a unique key to each checkbox to avoid duplicate widget IDs
+#                 item_visibility[item] = st.sidebar.checkbox(item, value=True, key=f"checkbox_{item}_Drink")
 
-        # Food Section
-        if foods:
-            st.sidebar.subheader("Food")
-            for item in foods:
-                # Add a unique key to each checkbox to avoid duplicate widget IDs
-                item_visibility[item] = st.sidebar.checkbox(item, value=True, key=f"checkbox_{item}_Food")
+#         # Food Section
+#         if foods:
+#             st.sidebar.subheader("Food")
+#             for item in foods:
+#                 # Add a unique key to each checkbox to avoid duplicate widget IDs
+#                 item_visibility[item] = st.sidebar.checkbox(item, value=True, key=f"checkbox_{item}_Food")
 
-        # User Section: Create a checkbox for each user to toggle their visibility
-        st.sidebar.subheader("Users")
-        for user in user_data.keys():
-            user_data[user] = st.sidebar.checkbox(user, value=True, key=f"checkbox_user_{user}")
+#         # User Section: Create a checkbox for each user to toggle their visibility
+#         st.sidebar.subheader("Users")
+#         for user in user_data.keys():
+#             user_data[user] = st.sidebar.checkbox(user, value=True, key=f"checkbox_user_{user}")
 
-        # Filter the data based on selected items and users
-        selected_items = [item for item, visible in item_visibility.items() if visible]
-        selected_users = [user for user, visible in user_data.items() if visible]
-        filtered_item_counts = item_counts[item_counts["Item"].isin(selected_items) & item_counts["User"].isin(selected_users)]
+#         # Filter the data based on selected items and users
+#         selected_items = [item for item, visible in item_visibility.items() if visible]
+#         selected_users = [user for user, visible in user_data.items() if visible]
+#         filtered_item_counts = item_counts[item_counts["Item"].isin(selected_items) & item_counts["User"].isin(selected_users)]
 
-        # Check if there is data to display
-        if not filtered_item_counts.empty:
-            # Create a line plot for each selected item over time
-            plt.figure(figsize=(12, 6))
-            sns.lineplot(data=filtered_item_counts, x="Date", y="Count", hue="Item", marker="o")
+#         # Check if there is data to display
+#         if not filtered_item_counts.empty:
+#             # Create a line plot for each selected item over time
+#             plt.figure(figsize=(12, 6))
+#             sns.lineplot(data=filtered_item_counts, x="Date", y="Count", hue="Item", marker="o")
 
-            # Customize the y-axis to show only integer labels
-            y_max = max(filtered_item_counts["Count"].max() + 1, 1)  # Set y_max to at least 1 to avoid errors
-            plt.yticks(range(0, y_max))  # Show only integer labels on the y-axis
+#             # Customize the y-axis to show only integer labels
+#             y_max = max(filtered_item_counts["Count"].max() + 1, 1)  # Set y_max to at least 1 to avoid errors
+#             plt.yticks(range(0, y_max))  # Show only integer labels on the y-axis
 
-            # Customize the plot
-            plt.xticks(rotation=45)
-            plt.title("Item Selections Over Time")
-            plt.xlabel("Date")
-            plt.ylabel("Number of Selections")
-            plt.legend(loc="upper center", bbox_to_anchor=(0.5, -0.15), ncol=3)
+#             # Customize the plot
+#             plt.xticks(rotation=45)
+#             plt.title("Item Selections Over Time")
+#             plt.xlabel("Date")
+#             plt.ylabel("Number of Selections")
+#             plt.legend(loc="upper center", bbox_to_anchor=(0.5, -0.15), ncol=3)
 
-            # Display the plot
-            st.pyplot(plt.gcf())
-        else:
-            st.write("No data to display. Please select at least one user and one item.")
-    else:
-        st.write("No historical data available to plot.")
+#             # Display the plot
+#             st.pyplot(plt.gcf())
+#         else:
+#             st.write("No data to display. Please select at least one user and one item.")
+#     else:
+#         st.write("No historical data available to plot.")
 
 
 if __name__ == "__main__":
