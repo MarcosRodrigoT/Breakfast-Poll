@@ -9,11 +9,12 @@ from collections import Counter
 
 
 # Local Directory Configuration
+os.makedirs("tmp", exist_ok=True)
 HISTORY_DIR = "history"
-SELECTION_FILE = "current_selections.csv"
-BAR_FILE = "bar.csv"
-MACHINE_FILE = "machine.csv"
-DEBTS_FILE = "debts.csv"
+SELECTION_FILE = "tmp/current_selections.csv"
+BAR_FILE = "tmp/bar.csv"
+MACHINE_FILE = "tmp/machine.csv"
+DEBTS_FILE = "tmp/debts.csv"
 
 
 # Initialize all required session state variables
@@ -68,14 +69,27 @@ def load_history():
 # Save the current summary to a text file in the local history directory
 def save_summary_to_history():
     timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    history_filename = os.path.join(HISTORY_DIR, f"{timestamp}.txt")
+    history_dir = os.path.join(HISTORY_DIR, timestamp)
 
-    if not os.path.exists(HISTORY_DIR):
-        os.makedirs(HISTORY_DIR)
+    os.makedirs(history_dir, exist_ok=True)
+
+    selection_file = os.path.join(history_dir, SELECTION_FILE.split("/")[-1])
+    bar_file = os.path.join(history_dir, BAR_FILE.split("/")[-1])
+    machine_file = os.path.join(history_dir, MACHINE_FILE.split("/")[-1])
+    debts_file = os.path.join(history_dir, DEBTS_FILE.split("/")[-1])
 
     if os.path.exists(SELECTION_FILE):
-        summary_df = pd.read_csv(SELECTION_FILE)
-        summary_df.to_csv(history_filename, index=False)
+        aux = pd.read_csv(SELECTION_FILE)
+        aux.to_csv(selection_file, index=False)
+    if os.path.exists(BAR_FILE):
+        aux = pd.read_csv(BAR_FILE)
+        aux.to_csv(bar_file, index=False)
+    if os.path.exists(MACHINE_FILE):
+        aux = pd.read_csv(MACHINE_FILE)
+        aux.to_csv(machine_file, index=False)
+    if os.path.exists(DEBTS_FILE):
+        aux = pd.read_csv(DEBTS_FILE)
+        aux.to_csv(debts_file, index=False)
 
     return timestamp
 
@@ -435,7 +449,8 @@ elif menu == "Current":
 
                 user_association[user_name] = user_price if user_name not in user_association else user_price + user_association[user_name]
         else:
-            raise NotImplementedError
+            st.write("This use case is out of scope. Good luck figuring this ticket out for yourselves. 😊")
+            st.write("[Click here for emotional support](https://goatse.ru/)")
 
         item_association["Colacaos"] = item_count["Colacao"]
         item_association["Yogurts"] = item_count["Yogurt"]
@@ -445,27 +460,32 @@ elif menu == "Current":
         # Create a DataFrame to display the ticket
         bar_selection = pd.DataFrame.from_dict(bar_count_dict, orient="index", columns=["Amount"])
         ticket_df = pd.DataFrame.from_dict(item_association, orient="index", columns=["Amount"])
-        settle_up_ticket = pd.DataFrame.from_dict(user_association, orient="index", columns=["Spent"])
+        debts_ticket = pd.DataFrame.from_dict(user_association, orient="index", columns=["Spent"])
 
         # Filter rows to exclude zero amounts
         filtered_bar = bar_selection[bar_selection.index != "Nada"]
-        filtered_df = ticket_df[ticket_df["Amount"] > 0]
+        filtered_machine = ticket_df[ticket_df["Amount"] > 0]
 
         # Format prices to show only 2 decimals
-        settle_up_ticket["Spent"] = settle_up_ticket["Spent"].apply(lambda x: f"{x:.2f}")
+        debts_ticket["Spent"] = debts_ticket["Spent"].apply(lambda x: f"{x:.2f}")
 
         st.subheader("Items to ask at the bar")
         st.table(filtered_bar)
 
         st.subheader("Paying Ticket")
-        st.table(filtered_df)
+        st.table(filtered_machine)
 
         st.subheader("Settle Up Ticket")
-        st.table(settle_up_ticket)
+        st.table(debts_ticket)
 
         # Calculate and display the total price
-        total_price = sum([float(price) for price in settle_up_ticket["Spent"]])
+        total_price = sum([float(price) for price in debts_ticket["Spent"]])
         st.write(f"**Total Price:** {total_price:.2f} €")
+
+        # Save tickets to files
+        filtered_bar.to_csv(BAR_FILE, index=False)
+        filtered_machine.to_csv(MACHINE_FILE, index=False)
+        debts_ticket.to_csv(DEBTS_FILE, index=False)
 
         # Set ticket_generated to True in session state
         st.session_state.ticket_generated = True
