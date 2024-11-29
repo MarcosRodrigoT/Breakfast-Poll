@@ -9,8 +9,12 @@ from collections import Counter
 
 
 # Local Directory Configuration
-LOCAL_HISTORY_DIR = "history"
-LOCAL_TEMP_FILE = "current_selections.csv"
+HISTORY_DIR = "history"
+SELECTION_FILE = "current_selections.csv"
+BAR_FILE = "bar.csv"
+MACHINE_FILE = "machine.csv"
+DEBTS_FILE = "debts.csv"
+
 
 # Initialize all required session state variables
 if "users" not in st.session_state:
@@ -25,8 +29,8 @@ if "history" not in st.session_state:
 
 # Load temporary selections from the local file
 def load_current_selections():
-    if os.path.exists(LOCAL_TEMP_FILE):
-        return pd.read_csv(LOCAL_TEMP_FILE)
+    if os.path.exists(SELECTION_FILE):
+        return pd.read_csv(SELECTION_FILE)
     else:
         return pd.DataFrame(columns=["Name", "Drinks", "Food"])
 
@@ -36,25 +40,25 @@ def save_current_selection_to_file(current_selections):
     current_selections["Drinks"] = current_selections["Drinks"].apply(lambda x: ", ".join(x) if isinstance(x, list) else x)
     current_selections["Food"] = current_selections["Food"].apply(lambda x: ", ".join(x) if isinstance(x, list) else x)
 
-    if os.path.exists(LOCAL_TEMP_FILE):
-        existing_selections = pd.read_csv(LOCAL_TEMP_FILE)
+    if os.path.exists(SELECTION_FILE):
+        existing_selections = pd.read_csv(SELECTION_FILE)
         combined_selections = pd.concat([existing_selections, current_selections]).drop_duplicates()
     else:
         combined_selections = current_selections
 
-    combined_selections.to_csv(LOCAL_TEMP_FILE, index=False)
+    combined_selections.to_csv(SELECTION_FILE, index=False)
 
 
 # Load history from the local directory
 def load_history():
     history = []
-    if not os.path.exists(LOCAL_HISTORY_DIR):
-        os.makedirs(LOCAL_HISTORY_DIR)
+    if not os.path.exists(HISTORY_DIR):
+        os.makedirs(HISTORY_DIR)
 
-    history_files = [f for f in os.listdir(LOCAL_HISTORY_DIR) if f.endswith(".txt")]
+    history_files = [f for f in os.listdir(HISTORY_DIR) if f.endswith(".txt")]
 
     for file in history_files:
-        file_path = os.path.join(LOCAL_HISTORY_DIR, file)
+        file_path = os.path.join(HISTORY_DIR, file)
         summary_df = pd.read_csv(file_path)
         date = file.split(".txt")[0]
         history.append({"Date": date, "Summary": summary_df})
@@ -64,13 +68,13 @@ def load_history():
 # Save the current summary to a text file in the local history directory
 def save_summary_to_history():
     timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    history_filename = os.path.join(LOCAL_HISTORY_DIR, f"{timestamp}.txt")
+    history_filename = os.path.join(HISTORY_DIR, f"{timestamp}.txt")
 
-    if not os.path.exists(LOCAL_HISTORY_DIR):
-        os.makedirs(LOCAL_HISTORY_DIR)
+    if not os.path.exists(HISTORY_DIR):
+        os.makedirs(HISTORY_DIR)
 
-    if os.path.exists(LOCAL_TEMP_FILE):
-        summary_df = pd.read_csv(LOCAL_TEMP_FILE)
+    if os.path.exists(SELECTION_FILE):
+        summary_df = pd.read_csv(SELECTION_FILE)
         summary_df.to_csv(history_filename, index=False)
 
     return timestamp
@@ -98,6 +102,7 @@ if menu == "Poll":
     # Step 1: User's Name
     st.header("Step 1: Enter your name")
     name_options = [
+        "Invitado",
         "Anna",
         "Carlos Cortés",
         "Carlos Cuevas",
@@ -124,7 +129,6 @@ if menu == "Poll":
         "Victoria",
         "Narciso García",
         "Pablo Pérez",
-        "Invitado",
     ]
     selected_user = st.radio("Select your name:", name_options)
     if st.button("Next", key="step1_next") and selected_user:
@@ -135,6 +139,7 @@ if menu == "Poll":
     if st.session_state.step >= 2:
         st.header("Step 2: Select your drink(s)")
         drinks_options = [
+            "Nada",
             "Café con leche",
             "Cortado",
             "Italiano",
@@ -147,7 +152,6 @@ if menu == "Poll":
             "Colacao",
             "Té",
             "Manzanilla",
-            "Nada",
         ]
         selected_drinks = st.radio("Choose your drinks:", drinks_options)
 
@@ -159,6 +163,7 @@ if menu == "Poll":
     if st.session_state.step >= 3:
         st.header("Step 3: Select your food(s)")
         food_options = [
+            "Nada",
             "Barrita aceite",
             "Barrita tomate",
             "Napolitana de chocolate",
@@ -167,7 +172,6 @@ if menu == "Poll":
             "Palmera chocolate blanco",
             "Tortilla",
             "Yogurt",
-            "Nada",
         ]
         selected_food = st.radio("Choose your food:", food_options)
 
@@ -397,7 +401,7 @@ elif menu == "Current":
                 if user_name in variable_users:
                     user_price = user_price[1]
 
-                user_association[user_name] = user_price
+                user_association[user_name] = user_price if user_name not in user_association else user_price + user_association[user_name]
 
         # If there is at least the same amount of coffes&teas as combinable food items
         elif combinable_drinks >= food_count:
@@ -429,7 +433,7 @@ elif menu == "Current":
                     tea_combos = original_tea_count - item_association["Infusión"]
                     user_price = user_price[1] + ((0.3 * tea_combos) / not_drinkers)
 
-                user_association[user_name] = user_price
+                user_association[user_name] = user_price if user_name not in user_association else user_price + user_association[user_name]
         else:
             raise NotImplementedError
 
@@ -468,17 +472,20 @@ elif menu == "Current":
 
     # Only show the "Submit Summary to History" button if a ticket is generated
     if st.session_state.ticket_generated:
-        if st.button("Submit Summary to History"):
+        # Display warning
+        st.warning("Warning: This will delete the current selection", icon="⚠️")
+
+        if st.button("Close Poll", type="primary"):
             timestamp = save_summary_to_history()
-            st.success(f"Summary saved to history at {timestamp}")
+            st.success(f"Poll saved to history at {timestamp}")
             st.session_state.history = load_history()
 
             # Clear local current selections
-            if os.path.exists(LOCAL_TEMP_FILE):
-                os.remove(LOCAL_TEMP_FILE)
+            if os.path.exists(SELECTION_FILE):
+                os.remove(SELECTION_FILE)
 
                 # Create an empty CSV to replace the deleted one
-                pd.DataFrame(columns=["Name", "Drinks", "Food"]).to_csv(LOCAL_TEMP_FILE, index=False)
+                pd.DataFrame(columns=["Name", "Drinks", "Food"]).to_csv(SELECTION_FILE, index=False)
 
             # Reset session state for current selections and ticket generation status
             st.session_state.current_selections = []
