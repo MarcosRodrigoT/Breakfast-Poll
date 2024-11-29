@@ -3,8 +3,6 @@ import pandas as pd
 from datetime import datetime
 import os
 import subprocess
-import matplotlib.pyplot as plt
-import seaborn as sns
 from collections import Counter
 
 
@@ -114,6 +112,12 @@ def save_summary_to_history():
     return timestamp
 
 
+# Function to reset the current selections after submission
+def reset_selections():
+    st.session_state.users = []
+    st.session_state.current_selections = []
+
+
 # Load persistent history and temporary selections on app start
 if "history" not in st.session_state:
     st.session_state.history = load_history()
@@ -121,16 +125,8 @@ if "history" not in st.session_state:
 
 # Sidebar for navigating through different views
 menu = st.sidebar.selectbox("Select View", ["Poll", "Current", "History"])
-
 # TODO: Implement at some point
 # menu = st.sidebar.selectbox("Select View", ["Poll", "Current", "History", "Graph"])
-
-
-# Function to reset the current selections after submission
-def reset_selections():
-    st.session_state.users = []
-    st.session_state.current_selections = []
-
 
 # Poll view with four consecutive steps
 if menu == "Poll":
