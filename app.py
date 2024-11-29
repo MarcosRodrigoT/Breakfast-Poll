@@ -2,9 +2,11 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime
 import os
+import subprocess
 import matplotlib.pyplot as plt
 import seaborn as sns
 from collections import Counter
+
 
 # Local Directory Configuration
 LOCAL_HISTORY_DIR = "history"
@@ -151,7 +153,10 @@ elif menu == "Current":
     st.title("Current Selections of All Users")
 
     if st.button("Reload Selections"):
-        download_temp_file_from_repo()
+        # Reload the current selections from the local file
+        st.session_state.current_selections = load_current_selections().to_dict(orient="records")
+        st.success("Selections reloaded successfully!")
+
 
     # Load the current selections from the session state or from the file
     current_df = load_current_selections()
@@ -425,14 +430,12 @@ elif menu == "Current":
             st.success(f"Summary saved to history at {timestamp}")
             st.session_state.history = load_history()
 
-            # Clear local and remote current selections
-            if os.path.exists(TEMP_FILE):
-                os.remove(TEMP_FILE)
-                delete_file_from_repo(TEMP_FILE)
+            # Clear local current selections
+            if os.path.exists(LOCAL_TEMP_FILE):
+                os.remove(LOCAL_TEMP_FILE)
 
                 # Create an empty CSV to replace the deleted one
-                pd.DataFrame(columns=["Name", "Drinks", "Food"]).to_csv(TEMP_FILE, index=False)
-                upload_temp_file_to_repo()
+                pd.DataFrame(columns=["Name", "Drinks", "Food"]).to_csv(LOCAL_TEMP_FILE, index=False)
 
             # Reset session state for current selections and ticket generation status
             st.session_state.current_selections = []
@@ -549,3 +552,20 @@ elif menu == "Graph":
     else:
         st.write("No historical data available to plot.")
 
+
+if __name__ == "__main__":
+    # Define the port you want your app to run on
+    PORT = 8500  # Replace with your preferred port number
+
+    # Check if Streamlit is already running on the specified port
+    try:
+        import socket
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.settimeout(1)
+        s.connect(("127.0.0.1", PORT))
+        s.close()
+        print(f"Streamlit is already running on port {PORT}.")
+    except (socket.error, ConnectionRefusedError):
+        print(f"Launching Streamlit app on port {PORT}...")
+        # Run Streamlit programmatically
+        subprocess.run(["streamlit", "run", __file__, "--server.port", str(PORT)], check=True)
