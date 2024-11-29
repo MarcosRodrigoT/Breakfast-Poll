@@ -22,12 +22,14 @@ if "step" not in st.session_state:
 if "history" not in st.session_state:
     st.session_state.history = []
 
+
 # Load temporary selections from the local file
 def load_current_selections():
     if os.path.exists(LOCAL_TEMP_FILE):
         return pd.read_csv(LOCAL_TEMP_FILE)
     else:
         return pd.DataFrame(columns=["Name", "Drinks", "Food"])
+
 
 # Save current user selections to the local CSV file without overwriting previous data
 def save_current_selection_to_file(current_selections):
@@ -41,6 +43,7 @@ def save_current_selection_to_file(current_selections):
         combined_selections = current_selections
 
     combined_selections.to_csv(LOCAL_TEMP_FILE, index=False)
+
 
 # Load history from the local directory
 def load_history():
@@ -57,6 +60,7 @@ def load_history():
         history.append({"Date": date, "Summary": summary_df})
     return history
 
+
 # Save the current summary to a text file in the local history directory
 def save_summary_to_history():
     timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
@@ -71,6 +75,7 @@ def save_summary_to_history():
 
     return timestamp
 
+
 # Load persistent history and temporary selections on app start
 if "history" not in st.session_state:
     st.session_state.history = load_history()
@@ -79,10 +84,12 @@ if "history" not in st.session_state:
 # Sidebar for navigating through different views
 menu = st.sidebar.selectbox("Select View", ["Poll", "Current", "History", "Graph"])
 
+
 # Function to reset the current selections after submission
 def reset_selections():
     st.session_state.users = []
     st.session_state.current_selections = []
+
 
 # Poll view with four consecutive steps
 if menu == "Poll":
@@ -91,11 +98,33 @@ if menu == "Poll":
     # Step 1: User's Name
     st.header("Step 1: Enter your name")
     name_options = [
-        "Anna", "Carlos Cortés", "Carlos Cuevas", "Carlos Roberto", "Celia Ibáñez",
-        "César Díaz", "Dani Berjón", "Dani Fuertes", "David", "Enmin Zhong",
-        "Enol Ayo", "Francisco Morán", "Javier Usón", "Jesús Gutierrez", "Julián Cabrera",
-        "Isa Rodriguez", "Leyre Encío", "Marcos Rodrigo", "Marta Goyena", "Marta Orduna",
-        "Martina", "Matteo", "Miki", "Victoria", "Narciso García", "Pablo Pérez", "Invitado"
+        "Anna",
+        "Carlos Cortés",
+        "Carlos Cuevas",
+        "Carlos Roberto",
+        "Celia Ibáñez",
+        "César Díaz",
+        "Dani Berjón",
+        "Dani Fuertes",
+        "David",
+        "Enmin Zhong",
+        "Enol Ayo",
+        "Francisco Morán",
+        "Javier Usón",
+        "Jesús Gutierrez",
+        "Julián Cabrera",
+        "Isa Rodriguez",
+        "Leyre Encío",
+        "Marcos Rodrigo",
+        "Marta Goyena",
+        "Marta Orduna",
+        "Martina",
+        "Matteo",
+        "Miki",
+        "Victoria",
+        "Narciso García",
+        "Pablo Pérez",
+        "Invitado",
     ]
     selected_user = st.radio("Select your name:", name_options)
     if st.button("Next", key="step1_next") and selected_user:
@@ -106,9 +135,19 @@ if menu == "Poll":
     if st.session_state.step >= 2:
         st.header("Step 2: Select your drink(s)")
         drinks_options = [
-            "Café con leche", "Cortado", "Italiano", "Aguasusia", "Café sin lactosa",
-            "Café con soja", "Descafeinado con leche", "Descafeinado con leche desnatada",
-            "Aguasusia susia", "Colacao", "Té", "Manzanilla", "Nada"
+            "Café con leche",
+            "Cortado",
+            "Italiano",
+            "Aguasusia",
+            "Café sin lactosa",
+            "Café con soja",
+            "Descafeinado con leche",
+            "Descafeinado con leche desnatada",
+            "Aguasusia susia",
+            "Colacao",
+            "Té",
+            "Manzanilla",
+            "Nada",
         ]
         selected_drinks = st.radio("Choose your drinks:", drinks_options)
 
@@ -120,8 +159,15 @@ if menu == "Poll":
     if st.session_state.step >= 3:
         st.header("Step 3: Select your food(s)")
         food_options = [
-            "Barrita aceite", "Barrita tomate", "Napolitana de chocolate", "Croissant plancha",
-            "Palmera chocolate", "Palmera chocolate blanco", "Tortilla", "Yogurt", "Nada"
+            "Barrita aceite",
+            "Barrita tomate",
+            "Napolitana de chocolate",
+            "Croissant plancha",
+            "Palmera chocolate",
+            "Palmera chocolate blanco",
+            "Tortilla",
+            "Yogurt",
+            "Nada",
         ]
         selected_food = st.radio("Choose your food:", food_options)
 
@@ -156,7 +202,6 @@ elif menu == "Current":
         # Reload the current selections from the local file
         st.session_state.current_selections = load_current_selections().to_dict(orient="records")
         st.success("Selections reloaded successfully!")
-
 
     # Load the current selections from the session state or from the file
     current_df = load_current_selections()
@@ -201,7 +246,7 @@ elif menu == "Current":
     if "ticket_generated" not in st.session_state:
         st.session_state.ticket_generated = False
 
-     # Generate Ticket Button and Logic
+    # Generate Ticket Button and Logic
     if st.button("Generate Ticket"):
         ticket = []
 
@@ -211,15 +256,15 @@ elif menu == "Current":
         foods = []  # Foods selected in the poll
         variable_users = []  # Users whose price might change depending on combo conditions
         drinker = []  # Users that have gotten a drink and whose price might change depending on combo conditions
-        combo_users = [] # Users that have gotten a combo option
+        combo_users = []  # Users that have gotten a combo option
 
         for _, row in current_df.iterrows():
-            drinks.append(row['Drinks'])
-            foods.append(row['Food'])
+            drinks.append(row["Drinks"])
+            foods.append(row["Food"])
 
-            user_name = row['Name']
-            user_drink = row['Drinks']
-            user_food = row['Food']
+            user_name = row["Name"]
+            user_drink = row["Drinks"]
+            user_food = row["Food"]
 
             # If just a drink has been selected
             if user_drink != "Nada" and user_food == "Nada":
@@ -227,7 +272,6 @@ elif menu == "Current":
 
             # If both drink and food have been selected
             elif user_drink != "Nada" and user_food != "Nada":
-
                 # If chosen food can be combined
                 if user_food in combinable:
                     user_food_aux = item_prices[user_food][1]  # Category to which the selected food belongs to
@@ -383,12 +427,11 @@ elif menu == "Current":
                 elif user_name in variable_users and user_name not in drinker:
                     not_drinkers = len(variable_users) - len(drinker)
                     tea_combos = original_tea_count - item_association["Infusión"]
-                    user_price = user_price[1] + ((0.3*tea_combos)/not_drinkers)
+                    user_price = user_price[1] + ((0.3 * tea_combos) / not_drinkers)
 
                 user_association[user_name] = user_price
         else:
             raise NotImplementedError
-
 
         item_association["Colacaos"] = item_count["Colacao"]
         item_association["Yogurts"] = item_count["Yogurt"]
@@ -396,13 +439,13 @@ elif menu == "Current":
         item_association["Palmeras"] = item_count["Palmera"]
 
         # Create a DataFrame to display the ticket
-        bar_selection = pd.DataFrame.from_dict(bar_count_dict, orient='index', columns=['Amount'])
-        ticket_df = pd.DataFrame.from_dict(item_association, orient='index', columns=['Amount'])
-        settle_up_ticket = pd.DataFrame.from_dict(user_association, orient='index', columns=['Spent'])
+        bar_selection = pd.DataFrame.from_dict(bar_count_dict, orient="index", columns=["Amount"])
+        ticket_df = pd.DataFrame.from_dict(item_association, orient="index", columns=["Amount"])
+        settle_up_ticket = pd.DataFrame.from_dict(user_association, orient="index", columns=["Spent"])
 
         # Filter rows to exclude zero amounts
         filtered_bar = bar_selection[bar_selection.index != "Nada"]
-        filtered_df = ticket_df[ticket_df['Amount'] > 0]
+        filtered_df = ticket_df[ticket_df["Amount"] > 0]
 
         # Format prices to show only 2 decimals
         settle_up_ticket["Spent"] = settle_up_ticket["Spent"].apply(lambda x: f"{x:.2f}")
@@ -476,13 +519,13 @@ elif menu == "Graph":
 
         for record in st.session_state.history:
             # Extract only the date part (YYYY-MM-DD) for display
-            date = record['Date'].split("_")[0]  # Use only the YYYY-MM-DD portion of the date
-            for index, row in record['Summary'].iterrows():
-                user = row['Name']
-                for drink in row['Drinks'].split(', '):
-                    history_data.append({'Date': date, 'Item': drink, 'Type': 'Drink', 'User': user})
-                for food in row['Food'].split(', '):
-                    history_data.append({'Date': date, 'Item': food, 'Type': 'Food', 'User': user})
+            date = record["Date"].split("_")[0]  # Use only the YYYY-MM-DD portion of the date
+            for index, row in record["Summary"].iterrows():
+                user = row["Name"]
+                for drink in row["Drinks"].split(", "):
+                    history_data.append({"Date": date, "Item": drink, "Type": "Drink", "User": user})
+                for food in row["Food"].split(", "):
+                    history_data.append({"Date": date, "Item": food, "Type": "Food", "User": user})
 
                 # Append user data for selection
                 if user not in user_data:
@@ -492,11 +535,11 @@ elif menu == "Graph":
         history_df = pd.DataFrame(history_data)
 
         # Count occurrences of each item per date
-        item_counts = history_df.groupby(['Date', 'Item', 'Type', 'User']).size().reset_index(name='Count')
+        item_counts = history_df.groupby(["Date", "Item", "Type", "User"]).size().reset_index(name="Count")
 
         # Separate items into Drinks and Food, and sort them alphabetically
-        drinks = sorted(item_counts[item_counts['Type'] == 'Drink']['Item'].unique())
-        foods = sorted(item_counts[item_counts['Type'] == 'Food']['Item'].unique())
+        drinks = sorted(item_counts[item_counts["Type"] == "Drink"]["Item"].unique())
+        foods = sorted(item_counts[item_counts["Type"] == "Food"]["Item"].unique())
 
         # Create a dictionary to store the checkbox values for each item
         item_visibility = {}
@@ -526,24 +569,24 @@ elif menu == "Graph":
         # Filter the data based on selected items and users
         selected_items = [item for item, visible in item_visibility.items() if visible]
         selected_users = [user for user, visible in user_data.items() if visible]
-        filtered_item_counts = item_counts[item_counts['Item'].isin(selected_items) & item_counts['User'].isin(selected_users)]
+        filtered_item_counts = item_counts[item_counts["Item"].isin(selected_items) & item_counts["User"].isin(selected_users)]
 
         # Check if there is data to display
         if not filtered_item_counts.empty:
             # Create a line plot for each selected item over time
             plt.figure(figsize=(12, 6))
-            sns.lineplot(data=filtered_item_counts, x='Date', y='Count', hue='Item', marker='o')
+            sns.lineplot(data=filtered_item_counts, x="Date", y="Count", hue="Item", marker="o")
 
             # Customize the y-axis to show only integer labels
-            y_max = max(filtered_item_counts['Count'].max() + 1, 1)  # Set y_max to at least 1 to avoid errors
+            y_max = max(filtered_item_counts["Count"].max() + 1, 1)  # Set y_max to at least 1 to avoid errors
             plt.yticks(range(0, y_max))  # Show only integer labels on the y-axis
 
             # Customize the plot
             plt.xticks(rotation=45)
-            plt.title('Item Selections Over Time')
-            plt.xlabel('Date')
-            plt.ylabel('Number of Selections')
-            plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.15), ncol=3)
+            plt.title("Item Selections Over Time")
+            plt.xlabel("Date")
+            plt.ylabel("Number of Selections")
+            plt.legend(loc="upper center", bbox_to_anchor=(0.5, -0.15), ncol=3)
 
             # Display the plot
             st.pyplot(plt.gcf())
@@ -560,6 +603,7 @@ if __name__ == "__main__":
     # Check if Streamlit is already running on the specified port
     try:
         import socket
+
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         s.settimeout(1)
         s.connect(("127.0.0.1", PORT))
