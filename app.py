@@ -130,10 +130,10 @@ menu = st.sidebar.selectbox("Select View", ["Poll", "Current", "History"])
 
 # Poll view with four consecutive steps
 if menu == "Poll":
-    st.title("Breakfast Poll Application")
+    st.title("Breakfast Poll")
 
     # Step 1: User's Name
-    st.header("Step 1: Enter your name")
+    st.header("Add participant")
     name_options = [
         "Invitado",
         "Anna",
@@ -170,21 +170,21 @@ if menu == "Poll":
 
     # Show Step 2 only if Step 1 is completed
     if st.session_state.step >= 2:
-        st.header("Step 2: Select your drink(s)")
+        st.header("Select your drink")
         drinks_options = [
             "Nada",
-            "Café con leche",
-            "Cortado",
-            "Italiano",
             "Aguasusia",
-            "Café sin lactosa",
+            "Aguasusia susia",
+            "Café con leche",
             "Café con soja",
+            "Café sin lactosa",
+            "Colacao",
+            "Cortado",
             "Descafeinado con leche",
             "Descafeinado con leche desnatada",
-            "Aguasusia susia",
-            "Colacao",
-            "Té",
+            "Italiano",
             "Manzanilla",
+            "Té",
         ]
         selected_drinks = st.radio("Choose your drinks:", drinks_options)
 
@@ -194,13 +194,13 @@ if menu == "Poll":
 
     # Show Step 3 only if Step 2 is completed
     if st.session_state.step >= 3:
-        st.header("Step 3: Select your food(s)")
+        st.header("Select your food")
         food_options = [
             "Nada",
             "Barrita aceite",
             "Barrita tomate",
-            "Napolitana de chocolate",
             "Croissant plancha",
+            "Napolitana de chocolate",
             "Palmera chocolate",
             "Palmera chocolate blanco",
             "Tortilla",
