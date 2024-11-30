@@ -3,6 +3,8 @@ import streamlit as st
 import pandas as pd
 from collections import Counter
 from datetime import datetime
+import matplotlib.pyplot as plt
+import seaborn as sns
 from utils import load_history, save_current_selection_to_file, load_current_selections, save_summary_to_history, format_date
 
 
@@ -36,9 +38,9 @@ def poll(selections_file):
         "Martina",
         "Matteo",
         "Miki",
-        "Victoria",
         "Narciso García",
         "Pablo Pérez",
+        "Victoria",
     ]
     selected_user = st.radio("Select your name:", name_options)
     if st.button("Next", key="step1_next") and selected_user:
@@ -432,3 +434,75 @@ def history(history_dir, selections_file, bar_file, machine_file, debts_file):
 
     else:
         st.write("No history records found.")
+
+
+def settle(history_dir):
+    st.title("Settle Debts")
+
+    try:
+        # Find the latest history directory
+        history_dirs = sorted(
+            [d for d in os.listdir(history_dir) if os.path.isdir(os.path.join(history_dir, d))], key=lambda x: pd.to_datetime(x, format="%Y-%m-%d_%H-%M-%S"), reverse=True
+        )
+
+        if history_dirs:
+            latest_history_dir = os.path.join(history_dir, history_dirs[0])
+            settle_file = os.path.join(latest_history_dir, "settle.csv")
+
+            if os.path.exists(settle_file):
+                settle_data = pd.read_csv(settle_file)
+            else:
+                # Create a new settle.csv file with user names and zero debt
+                users = [
+                    "Invitado",
+                    "Anna",
+                    "Carlos Cortés",
+                    "Carlos Cuevas",
+                    "Carlos Roberto",
+                    "Celia Ibáñez",
+                    "César Díaz",
+                    "Dani Berjón",
+                    "Dani Fuertes",
+                    "David",
+                    "Enmin Zhong",
+                    "Enol Ayo",
+                    "Francisco Morán",
+                    "Javier Usón",
+                    "Jesús Gutierrez",
+                    "Julián Cabrera",
+                    "Isa Rodriguez",
+                    "Leyre Encío",
+                    "Marcos Rodrigo",
+                    "Marta Goyena",
+                    "Marta Orduna",
+                    "Martina",
+                    "Matteo",
+                    "Miki",
+                    "Narciso García",
+                    "Pablo Pérez",
+                    "Victoria",
+                ]  # Replace with your dynamic user list
+                settle_data = pd.DataFrame({"Name": users, "Debt": [0] * len(users)})
+                settle_data.to_csv(settle_file, index=False)
+
+            # Draw a bar plot with Seaborn
+            st.subheader("Debt Status")
+            plt.figure(figsize=(12, 6))
+            sns.barplot(
+                data=settle_data,
+                x="Name",
+                y="Debt",
+                hue="Name",  # Assign unique colors based on the "Name" column
+                dodge=False,  # Ensures all bars are aligned
+                palette="husl",  # Use a color palette
+            )
+            plt.xlabel("User")
+            plt.ylabel("Debt (€)")
+            plt.ylim(0, settle_data["Debt"].max() + 1)
+            plt.title("Current Debt by User")
+            plt.xticks(rotation=45, ha="right")
+            plt.legend([], [], frameon=False)  # Hide the legend
+            st.pyplot(plt.gcf())
+
+    except FileNotFoundError:
+        st.write("No history records found. Unable to load settle data.")

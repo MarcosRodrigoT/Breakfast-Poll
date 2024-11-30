@@ -1,6 +1,17 @@
+import os
 import pandas as pd
 from datetime import datetime
-import os
+import logging
+
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s",
+    handlers=[
+        logging.StreamHandler(),  # Output to stdout (visible in journalctl)
+    ],
+)
 
 
 # Helper function to format the date
@@ -36,28 +47,31 @@ def save_current_selection_to_file(current_selections, selections_file):
 def load_history(history_dir, selections_file, bar_file, machine_file, debts_file):
     history = []
 
-    history_dirs = [d for d in os.listdir(history_dir) if os.path.isdir(os.path.join(history_dir, d))]
+    try:
+        history_dirs = [d for d in os.listdir(history_dir) if os.path.isdir(os.path.join(history_dir, d))]
 
-    for directory in history_dirs:
-        dir_path = os.path.join(history_dir, directory)
+        for directory in history_dirs:
+            dir_path = os.path.join(history_dir, directory)
 
-        selection_df = pd.read_csv(os.path.join(dir_path, selections_file.split("/")[-1]))
-        bar_df = pd.read_csv(os.path.join(dir_path, bar_file.split("/")[-1]))
-        machine_df = pd.read_csv(os.path.join(dir_path, machine_file.split("/")[-1]))
-        debts_df = pd.read_csv(os.path.join(dir_path, debts_file.split("/")[-1]))
+            selection_df = pd.read_csv(os.path.join(dir_path, selections_file.split("/")[-1]))
+            bar_df = pd.read_csv(os.path.join(dir_path, bar_file.split("/")[-1]))
+            machine_df = pd.read_csv(os.path.join(dir_path, machine_file.split("/")[-1]))
+            debts_df = pd.read_csv(os.path.join(dir_path, debts_file.split("/")[-1]))
 
-        # Format prices to show only 2 decimals
-        debts_df["Spent"] = debts_df["Spent"].apply(lambda x: f"{x:.2f}")
+            # Format prices to show only 2 decimals
+            debts_df["Spent"] = debts_df["Spent"].apply(lambda x: f"{x:.2f}")
 
-        history.append(
-            {
-                "Date": directory,
-                "Selection": selection_df,
-                "Bar": bar_df,
-                "Machine": machine_df,
-                "Debts": debts_df,
-            }
-        )
+            history.append(
+                {
+                    "Date": directory,
+                    "Selection": selection_df,
+                    "Bar": bar_df,
+                    "Machine": machine_df,
+                    "Debts": debts_df,
+                }
+            )
+    except FileNotFoundError:
+        history = []
     return history
 
 
@@ -86,4 +100,87 @@ def save_summary_to_history(history_dir, selections_file, bar_file, machine_file
         aux = pd.read_csv(debts_file)
         aux.to_csv(debts_file_, index=False)
 
+    # Update settle.csv with the accumulated debts
+    update_settle_up(history_dir, debts_file)
+
     return timestamp
+
+
+def update_settle_up(history_dir, debts_file):
+    # Get the latest history directory
+    history_dirs = sorted(
+        [d for d in os.listdir(history_dir) if os.path.isdir(os.path.join(history_dir, d))],
+        key=lambda x: pd.to_datetime(x, format="%Y-%m-%d_%H-%M-%S"),
+        reverse=True,
+    )
+
+    users = [
+        "Invitado",
+        "Anna",
+        "Carlos Cortés",
+        "Carlos Cuevas",
+        "Carlos Roberto",
+        "Celia Ibáñez",
+        "César Díaz",
+        "Dani Berjón",
+        "Dani Fuertes",
+        "David",
+        "Enmin Zhong",
+        "Enol Ayo",
+        "Francisco Morán",
+        "Javier Usón",
+        "Jesús Gutierrez",
+        "Julián Cabrera",
+        "Isa Rodriguez",
+        "Leyre Encío",
+        "Marcos Rodrigo",
+        "Marta Goyena",
+        "Marta Orduna",
+        "Martina",
+        "Matteo",
+        "Miki",
+        "Narciso García",
+        "Pablo Pérez",
+        "Victoria",
+    ]
+
+    # Load the latest settle.csv if it exists
+    settle_data = None
+    if len(history_dirs) > 1:
+        latest_history_dir = os.path.join(history_dir, history_dirs[1])  # 0 would correspond to the lastest (just created) file, read from the previous one instead
+        settle_file = os.path.join(latest_history_dir, "settle.csv")
+        if os.path.exists(settle_file):
+            settle_data = pd.read_csv(settle_file)
+    if settle_data is None:
+        settle_data = pd.DataFrame({"Name": users, "Debt": [0.0] * len(users)})
+
+    # Ensure the "Debt" column is of type float
+    settle_data["Debt"] = settle_data["Debt"].astype(float)
+
+    # Load current debts from debts_file
+    if os.path.exists(debts_file):
+        current_debts = pd.read_csv(debts_file)
+        current_debts.rename(columns={"Spent": "Debt"}, inplace=True)  # Align column name with settle.csv
+        current_debts_dict = dict(zip(current_debts["Name"], current_debts["Debt"].astype(float)))
+    else:
+        current_debts_dict = {}
+
+    # Update debts: Merge current debts into settle_data
+    settle_data.set_index("Name", inplace=True)
+    for user, debt in current_debts_dict.items():
+        if user in settle_data.index:
+            settle_data.at[user, "Debt"] += debt
+        else:
+            settle_data.loc[user] = debt  # Add new user with their debt
+    settle_data.reset_index(inplace=True)
+
+    # Save the updated settle.csv in the latest history directory
+    if history_dirs:
+        latest_history_dir = os.path.join(history_dir, history_dirs[0])
+    else:
+        timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        latest_history_dir = os.path.join(history_dir, timestamp)
+        os.makedirs(latest_history_dir, exist_ok=True)
+
+    settle_file = os.path.join(latest_history_dir, "settle.csv")
+    settle_data.to_csv(settle_file, index=False)

@@ -2,7 +2,7 @@ import streamlit as st
 import os
 import subprocess
 from utils import load_current_selections, load_history
-from views import poll, current, history
+from views import poll, current, history, settle
 
 
 # Local Directory Configuration
@@ -27,7 +27,7 @@ if "history" not in st.session_state:
 
 
 # Sidebar for navigating through different views
-menu = st.sidebar.selectbox("Select View", ["Poll", "Current", "History"])
+menu = st.sidebar.selectbox("Select View", ["Poll", "Current", "Settle", "History"])
 # TODO: Implement at some point
 # menu = st.sidebar.selectbox("Select View", ["Poll", "Current", "History", "Graph"])
 
@@ -41,6 +41,8 @@ match menu:
     case "History":
         # History view to check past summaries
         history(HISTORY_DIR, SELECTION_FILE, BAR_FILE, MACHINE_FILE, DEBTS_FILE)
+    case "Settle":
+        settle(HISTORY_DIR)
 
 # TODO: Implement at some point
 # # Graph view to display a line chart of item selections over time
