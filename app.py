@@ -4,6 +4,7 @@ from datetime import datetime
 import os
 import subprocess
 from collections import Counter
+from utils import format_date, load_current_selections, load_history, save_current_selection_to_file, save_summary_to_history
 
 
 # Local Directory Configuration
@@ -23,105 +24,9 @@ if "current_selections" not in st.session_state:
 if "step" not in st.session_state:
     st.session_state.step = 1
 if "history" not in st.session_state:
-    st.session_state.history = []
+    st.session_state.history = load_history(HISTORY_DIR, SELECTION_FILE, BAR_FILE, MACHINE_FILE, DEBTS_FILE)
+    st.session_state.current_selections = load_current_selections(SELECTION_FILE).to_dict(orient="records")
 
-
-# Helper function to format the date
-def format_date(date_str):
-    original_format = datetime.strptime(date_str, "%Y-%m-%d_%H-%M-%S")  # Convert string to datetime object
-    formatted_date = original_format.strftime("%B %d, %Y - %H:%M:%S")  # Format to "November 29, 2024 - 15:50:34"
-    return formatted_date
-
-
-# Load temporary selections from the local file
-def load_current_selections():
-    if os.path.exists(SELECTION_FILE):
-        return pd.read_csv(SELECTION_FILE)
-    else:
-        return pd.DataFrame(columns=["Name", "Drinks", "Food"])
-
-
-# Save current user selections to the local CSV file without overwriting previous data
-def save_current_selection_to_file(current_selections):
-    current_selections["Drinks"] = current_selections["Drinks"].apply(lambda x: ", ".join(x) if isinstance(x, list) else x)
-    current_selections["Food"] = current_selections["Food"].apply(lambda x: ", ".join(x) if isinstance(x, list) else x)
-
-    if os.path.exists(SELECTION_FILE):
-        existing_selections = pd.read_csv(SELECTION_FILE)
-        combined_selections = pd.concat([existing_selections, current_selections]).drop_duplicates()
-    else:
-        combined_selections = current_selections
-
-    combined_selections.to_csv(SELECTION_FILE, index=False)
-
-
-# Load history from the local directory
-def load_history():
-    history = []
-
-    history_dirs = [d for d in os.listdir(HISTORY_DIR) if os.path.isdir(os.path.join(HISTORY_DIR, d))]
-
-    for directory in history_dirs:
-        dir_path = os.path.join(HISTORY_DIR, directory)
-
-        selection_df = pd.read_csv(os.path.join(dir_path, SELECTION_FILE.split("/")[-1]))
-        bar_df = pd.read_csv(os.path.join(dir_path, BAR_FILE.split("/")[-1]))
-        machine_df = pd.read_csv(os.path.join(dir_path, MACHINE_FILE.split("/")[-1]))
-        debts_df = pd.read_csv(os.path.join(dir_path, DEBTS_FILE.split("/")[-1]))
-
-        # Format prices to show only 2 decimals
-        debts_df["Spent"] = debts_df["Spent"].apply(lambda x: f"{x:.2f}")
-
-        history.append(
-            {
-                "Date": directory,
-                "Selection": selection_df,
-                "Bar": bar_df,
-                "Machine": machine_df,
-                "Debts": debts_df,
-            }
-        )
-    return history
-
-
-# Save the current summary to a text file in the local history directory
-def save_summary_to_history():
-    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    history_dir = os.path.join(HISTORY_DIR, timestamp)
-
-    os.makedirs(history_dir, exist_ok=True)
-
-    selection_file = os.path.join(history_dir, SELECTION_FILE.split("/")[-1])
-    bar_file = os.path.join(history_dir, BAR_FILE.split("/")[-1])
-    machine_file = os.path.join(history_dir, MACHINE_FILE.split("/")[-1])
-    debts_file = os.path.join(history_dir, DEBTS_FILE.split("/")[-1])
-
-    if os.path.exists(SELECTION_FILE):
-        aux = pd.read_csv(SELECTION_FILE)
-        aux.to_csv(selection_file, index=False)
-    if os.path.exists(BAR_FILE):
-        aux = pd.read_csv(BAR_FILE)
-        aux.to_csv(bar_file, index=False)
-    if os.path.exists(MACHINE_FILE):
-        aux = pd.read_csv(MACHINE_FILE)
-        aux.to_csv(machine_file, index=False)
-    if os.path.exists(DEBTS_FILE):
-        aux = pd.read_csv(DEBTS_FILE)
-        aux.to_csv(debts_file, index=False)
-
-    return timestamp
-
-
-# Function to reset the current selections after submission
-def reset_selections():
-    st.session_state.users = []
-    st.session_state.current_selections = []
-
-
-# Load persistent history and temporary selections on app start
-if "history" not in st.session_state:
-    st.session_state.history = load_history()
-    st.session_state.current_selections = load_current_selections().to_dict(orient="records")
 
 # Sidebar for navigating through different views
 menu = st.sidebar.selectbox("Select View", ["Poll", "Current", "History"])
@@ -211,7 +116,7 @@ if menu == "Poll":
         if st.button("Save Selections", key="save_selections") and selected_food:
             st.session_state.current_selections[-1]["Food"] = selected_food
             df = pd.DataFrame(st.session_state.current_selections)
-            save_current_selection_to_file(df)
+            save_current_selection_to_file(df, SELECTION_FILE)
             st.success(f"Selections saved for {st.session_state.users[-1]}!")
             st.session_state.step = 1  # Reset to step 1 for the next user
 
@@ -220,7 +125,7 @@ elif menu == "History":
     st.title("Breakfast Poll History")
 
     # Load history if it's not already loaded
-    st.session_state.history = load_history()
+    st.session_state.history = load_history(HISTORY_DIR, SELECTION_FILE, BAR_FILE, MACHINE_FILE, DEBTS_FILE)
 
     # Sort history by the Date key in descending order
     st.session_state.history = sorted(st.session_state.history, key=lambda x: datetime.strptime(x["Date"], "%Y-%m-%d_%H-%M-%S"), reverse=True)
@@ -249,11 +154,11 @@ elif menu == "Current":
 
     if st.button("Reload Selections"):
         # Reload the current selections from the local file
-        st.session_state.current_selections = load_current_selections().to_dict(orient="records")
+        st.session_state.current_selections = load_current_selections(SELECTION_FILE).to_dict(orient="records")
         st.success("Selections reloaded successfully!")
 
     # Load the current selections from the session state or from the file
-    current_df = load_current_selections()
+    current_df = load_current_selections(SELECTION_FILE)
     st.dataframe(current_df, hide_index=True, use_container_width=True)
 
     # Define item prices and categories
@@ -483,10 +388,10 @@ elif menu == "Current":
             st.write("This use case is out of scope. Good luck figuring this ticket out for yourselves. 😊")
             st.write("[Click here for emotional support](https://goatse.ru/)")
 
-        item_association["Colacaos"] = item_count["Colacao"]
-        item_association["Yogurts"] = item_count["Yogurt"]
-        item_association["Tortillas"] = item_count["Tortilla"]
-        item_association["Palmeras"] = item_count["Palmera"]
+        item_association["Colacao"] = item_count["Colacao"]
+        item_association["Yogurt"] = item_count["Yogurt"]
+        item_association["Tortilla"] = item_count["Tortilla"]
+        item_association["Palmera"] = item_count["Palmera"]
 
         # Create a DataFrame to display the ticket
         bar_selection = pd.DataFrame.from_dict(bar_count_dict, orient="index", columns=["Amount"])
@@ -537,9 +442,9 @@ elif menu == "Current":
         st.warning("Warning: This will delete the current selection", icon="⚠️")
 
         if st.button("Close Poll", type="primary"):
-            timestamp = save_summary_to_history()
+            timestamp = save_summary_to_history(HISTORY_DIR, SELECTION_FILE, BAR_FILE, MACHINE_FILE, DEBTS_FILE)
             st.success(f"Poll saved to history at {timestamp}")
-            st.session_state.history = load_history()
+            st.session_state.history = load_history(HISTORY_DIR, SELECTION_FILE, BAR_FILE, MACHINE_FILE, DEBTS_FILE)
 
             # Clear local current selections
             if os.path.exists(SELECTION_FILE):
@@ -562,7 +467,7 @@ elif menu == "History":
 
     # Reload history if it's not already loaded
     if not st.session_state.history:
-        st.session_state.history = load_history()
+        st.session_state.history = load_history(HISTORY_DIR, SELECTION_FILE, BAR_FILE, MACHINE_FILE, DEBTS_FILE)
 
     if st.session_state.history:
         # Display history in reverse chronological order
@@ -580,7 +485,7 @@ elif menu == "History":
 
 #     # Load the history if not already loaded
 #     if not st.session_state.history:
-#         st.session_state.history = load_history()
+#         st.session_state.history = load_history(HISTORY_DIR, SELECTION_FILE, BAR_FILE, MACHINE_FILE, DEBTS_FILE)
 
 #     # Prepare data for plotting
 #     if st.session_state.history:
