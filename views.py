@@ -437,6 +437,7 @@ def history(history_dir, selections_file, bar_file, machine_file, debts_file):
 
 
 def settle(history_dir):
+    # TODO: Add "{USER} Payed" button so that when the person in charge of paying pays, the money he spent is deducted from his debt
     st.title("Settle Debts")
 
     try:
@@ -513,7 +514,17 @@ def settle(history_dir):
             )
             plt.xlabel("User")
             plt.ylabel("Debt (€)")
-            plt.ylim(0, settle_data["Debt"].max() + 1)
+            plt.ylim(settle_data["Debt"].min() - 1, settle_data["Debt"].max() + 1)  # Set y-axis limits
+            plt.axhline(0, color="black", linestyle="--", linewidth=1)  # Draw horizontal line at y=0
+
+            # Add a semi-transparent grid
+            plt.grid(
+                which="major",
+                linestyle="--",
+                linewidth=0.5,
+                alpha=0.7,  # Semi-transparency
+            )
+
             plt.title("Current Debt by User")
             plt.xticks(rotation=45, ha="right")
             plt.legend([], [], frameon=False)  # Hide the legend
