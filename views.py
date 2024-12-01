@@ -547,8 +547,6 @@ def settle(history_dir, debts_file):
                         with col2:
                             if st.button("Cancel"):
                                 st.session_state.confirm_payment = False
-                else:
-                    st.subheader("No eligible person found to pay for coffees today")
 
             # Draw a bar plot with Seaborn
             plt.figure(figsize=(12, 6))
