@@ -40,7 +40,7 @@ match menu:
         current(HISTORY_DIR, SELECTION_FILE, BAR_FILE, MACHINE_FILE, DEBTS_FILE)
     case "Settle":
         # Check settle up results and bar plot with debts
-        settle(HISTORY_DIR)
+        settle(HISTORY_DIR, DEBTS_FILE)
     case "History":
         # History view to check past summaries
         history(HISTORY_DIR, SELECTION_FILE, BAR_FILE, MACHINE_FILE, DEBTS_FILE)

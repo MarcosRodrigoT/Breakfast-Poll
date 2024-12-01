@@ -9,7 +9,7 @@ from utils import load_history, save_current_selection_to_file, load_current_sel
 
 
 def poll(selections_file):
-    st.title("☕ Breakfast Poll ☕")
+    st.title("☕Breakfast Poll☕")
 
     # Step 1: User's Name
     st.header("Add participant")
@@ -96,7 +96,7 @@ def poll(selections_file):
 
 
 def current(history_dir, selections_file, bar_file, machine_file, debts_file):
-    st.title("Current Selections of All Users")
+    st.title("Current Selections")
 
     if st.button("Reload Selections"):
         # Reload the current selections from the local file
@@ -436,21 +436,24 @@ def history(history_dir, selections_file, bar_file, machine_file, debts_file):
         st.write("No history records found.")
 
 
-def settle(history_dir):
-    # TODO: Add "{USER} Payed" button so that when the person in charge of paying pays, the money he spent is deducted from his debt
-    st.title("Settle Debts")
+def settle(history_dir, debts_file):
+    st.title("💲Settle Debts💲")
 
     try:
         # Find the latest history directory
         history_dirs = sorted(
-            [d for d in os.listdir(history_dir) if os.path.isdir(os.path.join(history_dir, d))], key=lambda x: pd.to_datetime(x, format="%Y-%m-%d_%H-%M-%S"), reverse=True
+            [d for d in os.listdir(history_dir) if os.path.isdir(os.path.join(history_dir, d))],
+            key=lambda x: pd.to_datetime(x, format="%Y-%m-%d_%H-%M-%S"),
+            reverse=True,
         )
 
         if history_dirs:
             latest_history_dir = os.path.join(history_dir, history_dirs[0])
             settle_file = os.path.join(latest_history_dir, "settle.csv")
             current_selections_file = os.path.join(latest_history_dir, "current_selections.csv")
+            who_paid_file = os.path.join(latest_history_dir, "who_paid.txt")
 
+            # Ensure settle_data is always initialized
             if os.path.exists(settle_file):
                 settle_data = pd.read_csv(settle_file)
             else:
@@ -487,20 +490,65 @@ def settle(history_dir):
                 settle_data = pd.DataFrame({"Name": users, "Debt": [0] * len(users)})
                 settle_data.to_csv(settle_file, index=False)
 
-            # Load current_selections.csv
-            if os.path.exists(current_selections_file):
-                current_selections = pd.read_csv(current_selections_file)
-                present_users = current_selections["Name"].tolist()
+            # Check if the who_paid.txt file exists
+            if os.path.exists(who_paid_file):
+                # If someone has already paid, display the information
+                with open(who_paid_file, "r") as file:
+                    paid_user = file.read().strip()
+                st.subheader(f":red[{paid_user}] paid the last coffees")
             else:
-                present_users = []
+                # Load current_selections.csv
+                if os.path.exists(current_selections_file):
+                    current_selections = pd.read_csv(current_selections_file)
+                    present_users = current_selections["Name"].tolist()
+                else:
+                    present_users = []
 
-            # Identify who pays for coffees
-            settle_data_present = settle_data[settle_data["Name"].isin(present_users)]
-            if not settle_data_present.empty:
-                max_debt_user = settle_data_present.loc[settle_data_present["Debt"].idxmax()]["Name"]
-                st.subheader(f"💲 Who pays today 💲 **:red[{max_debt_user}]**")
-            else:
-                st.subheader("No eligible person found to pay for coffees today")
+                # Identify who pays for coffees
+                settle_data_present = settle_data[settle_data["Name"].isin(present_users)]
+                if not settle_data_present.empty:
+                    max_debt_user = settle_data_present.loc[settle_data_present["Debt"].idxmax()]["Name"]
+                    st.subheader(f"Who pays today: :red[{max_debt_user}]")
+
+                    # Create a confirmation button
+                    if "confirm_payment" not in st.session_state:
+                        st.session_state.confirm_payment = False
+
+                    # Show the "Paid" button
+                    if not st.session_state.confirm_payment:
+                        if st.button(f"{max_debt_user} Paid"):
+                            st.session_state.confirm_payment = True
+
+                    # Show the confirmation buttons
+                    if st.session_state.confirm_payment:
+                        st.write(f"Are you sure {max_debt_user} has paid?")
+                        col1, col2 = st.columns([1, 1])
+                        with col1:
+                            if st.button("Confirm"):
+                                if os.path.exists(debts_file):
+                                    debts_data = pd.read_csv(debts_file)
+                                    total_spent = debts_data["Spent"].sum()
+
+                                    # Subtract the total spent from the payer's debt and round to 2 decimals
+                                    settle_data.loc[settle_data["Name"] == max_debt_user, "Debt"] = round(
+                                        settle_data.loc[settle_data["Name"] == max_debt_user, "Debt"].values[0] - total_spent,
+                                        2,
+                                    )
+                                    settle_data.to_csv(settle_file, index=False)
+
+                                    # Write the name of the person who paid to the who_paid.txt file
+                                    with open(who_paid_file, "w") as file:
+                                        file.write(f"{max_debt_user}\n")
+
+                                    st.success(f"{max_debt_user}'s debt has been updated! Paid {total_spent:.2f}€.")
+                                else:
+                                    st.warning("No debts file found. Unable to process payment.")
+                                st.session_state.confirm_payment = False  # Reset confirmation state
+                        with col2:
+                            if st.button("Cancel"):
+                                st.session_state.confirm_payment = False
+                else:
+                    st.subheader("No eligible person found to pay for coffees today")
 
             # Draw a bar plot with Seaborn
             plt.figure(figsize=(12, 6))
