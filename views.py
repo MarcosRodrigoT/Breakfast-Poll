@@ -448,6 +448,7 @@ def settle(history_dir):
         if history_dirs:
             latest_history_dir = os.path.join(history_dir, history_dirs[0])
             settle_file = os.path.join(latest_history_dir, "settle.csv")
+            current_selections_file = os.path.join(latest_history_dir, "current_selections.csv")
 
             if os.path.exists(settle_file):
                 settle_data = pd.read_csv(settle_file)
@@ -485,8 +486,22 @@ def settle(history_dir):
                 settle_data = pd.DataFrame({"Name": users, "Debt": [0] * len(users)})
                 settle_data.to_csv(settle_file, index=False)
 
+            # Load current_selections.csv
+            if os.path.exists(current_selections_file):
+                current_selections = pd.read_csv(current_selections_file)
+                present_users = current_selections["Name"].tolist()
+            else:
+                present_users = []
+
+            # Identify who pays for coffees
+            settle_data_present = settle_data[settle_data["Name"].isin(present_users)]
+            if not settle_data_present.empty:
+                max_debt_user = settle_data_present.loc[settle_data_present["Debt"].idxmax()]["Name"]
+                st.subheader(f"The person who pays for coffees today: **:red[{max_debt_user}]**")
+            else:
+                st.subheader("No eligible person found to pay for coffees today")
+
             # Draw a bar plot with Seaborn
-            st.subheader("Debt Status")
             plt.figure(figsize=(12, 6))
             sns.barplot(
                 data=settle_data,

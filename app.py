@@ -28,8 +28,8 @@ if "history" not in st.session_state:
 
 # Sidebar for navigating through different views
 menu = st.sidebar.selectbox("Select View", ["Poll", "Current", "Settle", "History"])
-# TODO: Implement at some point
-# menu = st.sidebar.selectbox("Select View", ["Poll", "Current", "History", "Graph"])
+# TODO:
+# menu = st.sidebar.selectbox("Select View", ["Poll", "Current", "Settle", "History", "Graph"])
 
 match menu:
     case "Poll":
@@ -38,13 +38,14 @@ match menu:
     case "Current":
         # "Current" view to display the current summary of all users' selections and generate ticket
         current(HISTORY_DIR, SELECTION_FILE, BAR_FILE, MACHINE_FILE, DEBTS_FILE)
+    case "Settle":
+        # Check settle up results and bar plot with debts
+        settle(HISTORY_DIR)
     case "History":
         # History view to check past summaries
         history(HISTORY_DIR, SELECTION_FILE, BAR_FILE, MACHINE_FILE, DEBTS_FILE)
-    case "Settle":
-        settle(HISTORY_DIR)
 
-# TODO: Implement at some point
+# TODO:
 # # Graph view to display a line chart of item selections over time
 # elif menu == "Graph":
 #     st.title("Breakfast Poll History - Graph View")
