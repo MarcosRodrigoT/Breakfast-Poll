@@ -9,7 +9,7 @@ from utils import load_history, save_current_selection_to_file, load_current_sel
 
 
 def poll(selections_file):
-    st.title("Breakfast Poll")
+    st.title("☕ Breakfast Poll ☕")
 
     # Step 1: User's Name
     st.header("Add participant")
@@ -498,7 +498,7 @@ def settle(history_dir):
             settle_data_present = settle_data[settle_data["Name"].isin(present_users)]
             if not settle_data_present.empty:
                 max_debt_user = settle_data_present.loc[settle_data_present["Debt"].idxmax()]["Name"]
-                st.subheader(f"The person who pays for coffees today: **:red[{max_debt_user}]**")
+                st.subheader(f"💲 Who pays today 💲 **:red[{max_debt_user}]**")
             else:
                 st.subheader("No eligible person found to pay for coffees today")
 
