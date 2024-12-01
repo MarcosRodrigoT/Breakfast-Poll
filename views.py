@@ -9,7 +9,7 @@ from utils import load_history, save_current_selection_to_file, load_current_sel
 
 
 def poll(selections_file):
-    st.title("☕Breakfast Poll☕")
+    st.title("☕Poll☕")
 
     # Step 1: User's Name
     st.header("Add participant")
@@ -96,7 +96,7 @@ def poll(selections_file):
 
 
 def current(history_dir, selections_file, bar_file, machine_file, debts_file):
-    st.title("Current Selections")
+    st.title("💥Current💥")
 
     if st.button("Reload Selections"):
         # Reload the current selections from the local file
@@ -409,7 +409,7 @@ def current(history_dir, selections_file, bar_file, machine_file, debts_file):
 
 
 def history(history_dir, selections_file, bar_file, machine_file, debts_file):
-    st.title("Breakfast Poll History")
+    st.title("📜History📜")
 
     # Load history if it's not already loaded
     st.session_state.history = load_history(history_dir, selections_file, bar_file, machine_file, debts_file)
@@ -437,7 +437,7 @@ def history(history_dir, selections_file, bar_file, machine_file, debts_file):
 
 
 def settle(history_dir, debts_file):
-    st.title("💲Settle Debts💲")
+    st.title("💲Settle💲")
 
     try:
         # Find the latest history directory
