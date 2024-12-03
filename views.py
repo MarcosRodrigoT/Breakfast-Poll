@@ -157,6 +157,7 @@ def current(history_dir, selections_file, bar_file, machine_file, debts_file):
         variable_users = []  # Users whose price might change depending on combo conditions
         drinker = []  # Users that have gotten a drink and whose price might change depending on combo conditions
         combo_users = []  # Users that have gotten a combo option
+        infusion_drinker = []  # Users that have gotten an infusion as a drink
 
         for _, row in current_df.iterrows():
             drinks.append(row["Drinks"])
@@ -199,12 +200,14 @@ def current(history_dir, selections_file, bar_file, machine_file, debts_file):
                                         user_price = (1.85, 1.55)
                                         variable_users.append(user_name)
                                         drinker.append(user_name)
+                                        infusion_drinker.append(user_name)
                                         combo_users.append((user_name, user_drink, user_food))
                                     # If chosen food belongs to the expensier breakfast combo
                                     case "Barrita tomate" | "Croissant":
                                         user_price = (2.5, 2.2)
                                         variable_users.append(user_name)
                                         drinker.append(user_name)
+                                        infusion_drinker.append(user_name)
                                         combo_users.append((user_name, user_drink, user_food))
 
                     # If chosen drink cannot be combined
@@ -310,6 +313,7 @@ def current(history_dir, selections_file, bar_file, machine_file, debts_file):
             item_association["Desayuno + Café (croissant)"] = item_count["Croissant"]
 
             df_diff = combinable_drinks - food_count
+            not_drinkers = len(variable_users) - len(drinker)
 
             # The new number of teas is computed
             if df_diff == 0:
@@ -318,16 +322,25 @@ def current(history_dir, selections_file, bar_file, machine_file, debts_file):
                 food_left = food_count - item_count["Café"]
                 item_association["Infusión"] = item_count["Infusión"] - food_left
 
+            # Number of combos that have been made with an infusion
+            tea_combos = original_tea_count - item_association["Infusión"]
+
             # The price that each user has to pay is computed
             for user in users:
                 user_name = user[0]
                 user_price = user[1]
-                if user_name in variable_users and user_name in drinker:
-                    user_price = user_price[1]
-                elif user_name in variable_users and user_name not in drinker:
-                    not_drinkers = len(variable_users) - len(drinker)
-                    tea_combos = original_tea_count - item_association["Infusión"]
-                    user_price = user_price[1] + ((0.3 * tea_combos) / not_drinkers)
+                if not_drinkers > 0 and not_drinkers > tea_combos:
+                    if user_name in variable_users and user_name in drinker:
+                        user_price = user_price[1]
+                    elif user_name in variable_users and user_name not in drinker:
+                        user_price = user_price[1] + ((0.3*tea_combos)/not_drinkers)
+                elif not_drinkers == 0:
+                    if user_name in variable_users and user_name in infusion_drinker:
+                        user_price = user_price[1] + ((0.3*tea_combos)/len(infusion_drinker))
+                    elif user_name in variable_users and user_name not in infusion_drinker:
+                        user_price = user_price[1]
+                elif not_drinkers > 0 and not_drinkers < tea_combos:
+                    user_price = user_price[1] + ((0.3*tea_combos)/len(variable_users))
 
                 user_association[user_name] = user_price if user_name not in user_association else user_price + user_association[user_name]
         else:
