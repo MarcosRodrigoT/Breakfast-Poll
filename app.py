@@ -14,6 +14,13 @@ MACHINE_FILE = "tmp/machine.csv"
 DEBTS_FILE = "tmp/debts.csv"
 
 
+# Set name and icon to webpage
+st.set_page_config(
+    page_title="Café GTI",
+    page_icon="☕",
+)
+
+
 # Initialize all required session state variables
 if "users" not in st.session_state:
     st.session_state.users = []
