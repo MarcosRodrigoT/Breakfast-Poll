@@ -10,6 +10,10 @@ from utils import load_history, save_current_selection_to_file, load_current_sel
 
 def poll(selections_file):
     st.title("☕Poll☕")
+    
+    # Initialize state
+    if "poll_state" not in st.session_state:
+        st.session_state.poll_state = 0
 
     # Step 1: User's Name
     st.header("Add participant")
@@ -45,10 +49,10 @@ def poll(selections_file):
     selected_user = st.radio("Select your name:", name_options)
     if st.button("Next", key="step1_next") and selected_user:
         st.session_state.users.append(selected_user)
-        st.session_state.step = 2  # Set the next step to be visible
+        st.session_state.poll_state = 1
 
     # Show Step 2 only if Step 1 is completed
-    if st.session_state.step >= 2:
+    if st.session_state.poll_state > 0:
         st.header("Select your drink")
         drinks_options = [
             "Nada",
@@ -68,11 +72,14 @@ def poll(selections_file):
         selected_drinks = st.radio("Choose your drinks:", drinks_options)
 
         if st.button("Next", key="step2_next") and selected_drinks:
-            st.session_state.current_selections.append({"Name": st.session_state.users[-1], "Drinks": selected_drinks})
-            st.session_state.step = 3  # Set the next step to be visible
+            st.session_state.current_selections.append({
+                "Name": st.session_state.users[-1],
+                "Drinks": selected_drinks
+            })
+            st.session_state.poll_state = 2
 
     # Show Step 3 only if Step 2 is completed
-    if st.session_state.step >= 3:
+    if st.session_state.poll_state > 1:
         st.header("Select your food")
         food_options = [
             "Nada",
@@ -92,16 +99,19 @@ def poll(selections_file):
             df = pd.DataFrame(st.session_state.current_selections)
             save_current_selection_to_file(df, selections_file)
             st.success(f"Selections saved for {st.session_state.users[-1]}!")
-            st.session_state.step = 1  # Reset to step 1 for the next user
+            st.session_state.poll_state = 0
 
 
 def current(history_dir, selections_file, bar_file, machine_file, debts_file):
     st.title("💥Current💥")
 
+    # Reload the current selections from the local file
     if st.button("Reload Selections"):
-        # Reload the current selections from the local file
         st.session_state.current_selections = load_current_selections(selections_file).to_dict(orient="records")
-        st.success("Selections reloaded successfully!")
+        # st.success("Selections reloaded successfully!")
+        
+        # Restart ticket generation
+        st.session_state.ticket_step = 0
 
     # Load the current selections from the session state or from the file
     current_df = load_current_selections(selections_file)
@@ -143,11 +153,13 @@ def current(history_dir, selections_file, bar_file, machine_file, debts_file):
     ]
 
     # Use session state to persist ticket generation status
-    if "ticket_generated" not in st.session_state:
-        st.session_state.ticket_generated = False
+    if "ticket_step" not in st.session_state:
+        st.session_state.ticket_step = 0
+    def generate_ticket():
+        st.session_state.ticket_step = 1
 
     # Generate Ticket Button and Logic
-    if st.button("Generate Ticket"):
+    if st.button("Generate Ticket", disabled=st.session_state.ticket_step > 0, on_click=generate_ticket) or st.session_state.ticket_step > 0:
         ticket = []
 
         # Iterate over each user's selections
@@ -385,40 +397,50 @@ def current(history_dir, selections_file, bar_file, machine_file, debts_file):
 
         # Calculate and display the total price
         total_price = sum([float(price) for price in debts_ticket["Spent"]])
+        st.header("💸Pay💸")
         st.write(f"**Total Price:** {total_price:.2f} €")
 
         # Save tickets to files
         filtered_bar.to_csv(bar_file, index=False)
         filtered_machine.to_csv(machine_file, index=False)
         debts_ticket.to_csv(debts_file, index=False)
+        
+        # Decide who pays
+        debts_ticket = debts_ticket.sort_values(by="Spent", ascending=False)
+        whopays = debts_ticket.apply(lambda row: f"{row['Name']} - {row['Spent']}", axis=1).tolist()
+        selected_whopays = st.radio("Decide who pays:", whopays)
+        
+        # Close poll
+        if st.button("Close Poll", type="primary") and selected_whopays:
+            st.session_state.ticket_step = 2
+            
+            st.write("")
+            st.write(f"{selected_whopays.split(' - ')[0]} will pay")
+            
+            # Display warning
+            st.warning("Warning: Are you sure you want to close the poll? You will delete the current order", icon="⚠️")
 
-        # Set ticket_generated to True in session state
-        st.session_state.ticket_generated = True
+            # Confirm close poll
+            def close_poll():
+                timestamp = save_summary_to_history(history_dir, selections_file, bar_file, machine_file, debts_file)
+                st.success(f"Poll saved to history at {timestamp}")
+                st.session_state.history = load_history(history_dir, selections_file, bar_file, machine_file, debts_file)
 
-    # Only show the "Submit Summary to History" button if a ticket is generated
-    if st.session_state.ticket_generated:
-        # Display warning
-        st.warning("Warning: This will delete the current selection", icon="⚠️")
+                # Clear local current selections
+                if os.path.exists(selections_file):
+                    os.remove(selections_file)
 
-        if st.button("Close Poll", type="primary"):
-            timestamp = save_summary_to_history(history_dir, selections_file, bar_file, machine_file, debts_file)
-            st.success(f"Poll saved to history at {timestamp}")
-            st.session_state.history = load_history(history_dir, selections_file, bar_file, machine_file, debts_file)
+                    # Create an empty CSV to replace the deleted one
+                    pd.DataFrame(columns=["Name", "Drinks", "Food"]).to_csv(selections_file, index=False)
 
-            # Clear local current selections
-            if os.path.exists(selections_file):
-                os.remove(selections_file)
+                # Reset session state for current selections and ticket generation status
+                st.session_state.current_selections = []
+                st.session_state.ticket_step = 0
 
-                # Create an empty CSV to replace the deleted one
-                pd.DataFrame(columns=["Name", "Drinks", "Food"]).to_csv(selections_file, index=False)
-
-            # Reset session state for current selections and ticket generation status
-            st.session_state.current_selections = []
-            st.session_state.ticket_generated = False
-
-            # Reload the current selections to show an empty table
-            current_df = pd.DataFrame(columns=["Name", "Drinks", "Food"])
-            st.dataframe(current_df, hide_index=True, use_container_width=True)
+                # Reload the current selections to show an empty table
+                current_df = pd.DataFrame(columns=["Name", "Drinks", "Food"])
+                # st.dataframe(current_df, hide_index=True, use_container_width=True)
+            st.button("Confirm", type="primary", on_click=close_poll)
 
 
 def history(history_dir, selections_file, bar_file, machine_file, debts_file):
