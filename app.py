@@ -1,8 +1,9 @@
-import streamlit as st
 import os
 import subprocess
-from utils import load_current_selections, load_history
+import streamlit as st
+
 from views import poll, current, history, settle
+from utils import load_current_selections, load_history
 
 
 # Local Directory Configuration
