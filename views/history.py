@@ -13,17 +13,20 @@ def history(history_dir, selections_file, bar_file, machine_file, debts_file):
     # Load history if it's not already loaded
     st.session_state.history = load_history(history_dir, selections_file, bar_file, machine_file, debts_file)
 
-    # Sort history by the Date key in descending order
+    # Sort history by the date key in descending order
     st.session_state.history = sorted(st.session_state.history, key=lambda x: datetime.strptime(x["Date"], "%Y-%m-%d_%H-%M-%S"), reverse=True)
 
+    # Display history in reverse chronological order
     if st.session_state.history:
-        # Display history in reverse chronological order
         for record in st.session_state.history:
+            
             # Format the date for display
             formatted_date = format_date(record["Date"])
+            
+            # Show data
             with st.expander(f"{formatted_date}"):
-                st.markdown("#### Selections")
-                st.dataframe(record["Selection"], hide_index=True, use_container_width=True)
+                st.markdown("#### Order")
+                st.dataframe(record["Order"], hide_index=True, use_container_width=True)
                 st.markdown("#### Bar")
                 st.dataframe(record["Bar"], hide_index=True, use_container_width=True)
                 st.markdown("#### Machine")

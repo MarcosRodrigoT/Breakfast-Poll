@@ -1,14 +1,13 @@
-import os
 import pandas as pd
 import streamlit as st
 
-from utils import save_current_selections
+from utils import save_order
 
 
-def poll(selections_file):
+def poll(order_file):
     st.title("☕Poll☕")
     
-    # Check if user moved to other menu
+    # Check if user moved to other view
     if st.session_state.state != 'Poll':
         st.session_state.state = 'Poll'
         st.session_state.poll_state = 0
@@ -34,7 +33,7 @@ def poll(selections_file):
     if st.button("Next", key="step1_next") and participant:
         st.session_state.participant = participant
         st.session_state.poll_state = 1
-        st.session_state.current_selections = {"Name": participant}
+        st.session_state.current_order = {"Name": participant}
 
     # Step 2: Drink (only if step 1 completed)
     if st.session_state.poll_state > 0:
@@ -58,7 +57,7 @@ def poll(selections_file):
 
         # Select drink
         if st.button("Next", key="step2_next") and drink:
-            st.session_state.current_selections['Drinks'] = drink
+            st.session_state.current_order['Drinks'] = drink
             st.session_state.poll_state = 2
 
     # Step 3: Food (only if step 2 completed)
@@ -79,12 +78,12 @@ def poll(selections_file):
 
         # Select food
         if st.button("Save") and food:
-            st.session_state.current_selections['Food'] = food
+            st.session_state.current_order['Food'] = food
             
             # Save selections
-            df = pd.DataFrame(st.session_state.current_selections, index=[0])
-            save_current_selections(df, selections_file)
+            df = pd.DataFrame(st.session_state.current_order, index=[0])
+            save_order(df, order_file)
             
             # Success & reset
-            st.success(f"Selections saved for {st.session_state.current_selections['Name']}!")
+            st.success(f"Selections saved for {st.session_state.current_order['Name']}!")
             st.session_state.poll_state = 0

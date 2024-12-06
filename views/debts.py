@@ -5,12 +5,12 @@ import streamlit as st
 import matplotlib.pyplot as plt
 
 
-def settle(history_dir, debts_file):
-    st.title("💲Settle💲")
+def debts(history_dir, debts_file):
+    st.title("💲Debts💲")
     
     # Check if user moved to other menu
-    if st.session_state.state != 'Settle':
-        st.session_state.state = 'Settle'
+    if st.session_state.state != 'Debts':
+        st.session_state.state = 'Debts'
 
     try:
         # Find the latest history directory
