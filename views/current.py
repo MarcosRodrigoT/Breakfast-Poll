@@ -8,6 +8,10 @@ from utils import load_history, load_current_selections, save_summary_to_history
 
 def current(history_dir, selections_file, bar_file, machine_file, debts_file):
     st.title("💥Current💥")
+    
+    # Check if user moved to other menu
+    if st.session_state.state != 'Current':
+        st.session_state.state = 'Current'
 
     # Reload the current selections from the local file
     if st.button("Reload Selections"):
@@ -315,33 +319,34 @@ def current(history_dir, selections_file, bar_file, machine_file, debts_file):
         selected_whopays = st.radio("Decide who pays:", whopays)
         
         # Close poll
-        if st.button("Close Poll", type="primary") and selected_whopays:
-            st.session_state.ticket_step = 2
-            
-            st.write("")
-            st.write(f"{selected_whopays.split(' - ')[0]} will pay")
-            
-            # Display warning
-            st.warning("Warning: Are you sure you want to close the poll? You will delete the current order", icon="⚠️")
+        if len(whopays) > 0:
+            if st.button("Close Poll", type="primary") and selected_whopays:
+                st.session_state.ticket_step = 2
+                
+                st.write("")
+                st.write(f"{selected_whopays.split(' - ')[0]} will pay")
+                
+                # Display warning
+                st.warning("Warning: Are you sure you want to close the poll? You will delete the current order", icon="⚠️")
 
-            # Confirm close poll
-            def close_poll():
-                timestamp = save_summary_to_history(history_dir, selections_file, bar_file, machine_file, debts_file)
-                st.success(f"Poll saved to history at {timestamp}")
-                st.session_state.history = load_history(history_dir, selections_file, bar_file, machine_file, debts_file)
+                # Confirm close poll
+                def close_poll():
+                    timestamp = save_summary_to_history(history_dir, selections_file, bar_file, machine_file, debts_file)
+                    st.success(f"Poll saved to history at {timestamp}")
+                    st.session_state.history = load_history(history_dir, selections_file, bar_file, machine_file, debts_file)
 
-                # Clear local current selections
-                if os.path.exists(selections_file):
-                    os.remove(selections_file)
+                    # Clear local current selections
+                    if os.path.exists(selections_file):
+                        os.remove(selections_file)
 
-                    # Create an empty CSV to replace the deleted one
-                    pd.DataFrame(columns=["Name", "Drinks", "Food"]).to_csv(selections_file, index=False)
+                        # Create an empty CSV to replace the deleted one
+                        pd.DataFrame(columns=["Name", "Drinks", "Food"]).to_csv(selections_file, index=False)
 
-                # Reset session state for current selections and ticket generation status
-                st.session_state.current_selections = []
-                st.session_state.ticket_step = 0
+                    # Reset session state for current selections and ticket generation status
+                    st.session_state.current_selections = []
+                    st.session_state.ticket_step = 0
 
-                # Reload the current selections to show an empty table
-                current_df = pd.DataFrame(columns=["Name", "Drinks", "Food"])
-                # st.dataframe(current_df, hide_index=True, use_container_width=True)
-            st.button("Confirm", type="primary", on_click=close_poll)
+                    # Reload the current selections to show an empty table
+                    current_df = pd.DataFrame(columns=["Name", "Drinks", "Food"])
+                    # st.dataframe(current_df, hide_index=True, use_container_width=True)
+                st.button("Confirm", type="primary", on_click=close_poll)

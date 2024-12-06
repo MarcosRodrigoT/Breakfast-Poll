@@ -1,7 +1,8 @@
 import os
+import yaml
+import logging
 import pandas as pd
 from datetime import datetime
-import logging
 
 
 # Configure logging
@@ -30,7 +31,7 @@ def load_current_selections(selections_file):
 
 
 # Save current user selections to the local CSV file without overwriting previous data
-def save_current_selection_to_file(current_selections, selections_file):
+def save_current_selections(current_selections, selections_file):
     current_selections["Drinks"] = current_selections["Drinks"].apply(lambda x: ", ".join(x) if isinstance(x, list) else x)
     current_selections["Food"] = current_selections["Food"].apply(lambda x: ", ".join(x) if isinstance(x, list) else x)
 
@@ -184,3 +185,9 @@ def update_settle_up(history_dir, debts_file):
 
     settle_file = os.path.join(latest_history_dir, "settle.csv")
     settle_data.to_csv(settle_file, index=False)
+
+
+def load_users(users_file):
+    with open(users_file, "r", encoding="utf-8") as f:
+        data = yaml.safe_load(f)
+    return data["users"]

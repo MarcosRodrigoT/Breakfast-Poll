@@ -2,53 +2,41 @@ import os
 import pandas as pd
 import streamlit as st
 
-from utils import save_current_selection_to_file
+from utils import save_current_selections
 
 
 def poll(selections_file):
     st.title("☕Poll☕")
     
+    # Check if user moved to other menu
+    if st.session_state.state != 'Poll':
+        st.session_state.state = 'Poll'
+        st.session_state.poll_state = 0
+        st.session_state.participant = st.session_state.users[0]
+    
     # Initialize state
     if "poll_state" not in st.session_state:
         st.session_state.poll_state = 0
+    
+    # Initialize default participant
+    if "participant" not in st.session_state:
+        st.session_state.participant = st.session_state.users[0]
 
-    # Step 1: User's Name
+    # Step 1: Participant
     st.header("Add participant")
-    name_options = [
-        "Invitado",
-        "Anna",
-        "Carlos Cortés",
-        "Carlos Cuevas",
-        "Carlos Roberto",
-        "Celia Ibáñez",
-        "César Díaz",
-        "Dani Berjón",
-        "Dani Fuertes",
-        "David",
-        "Enmin Zhong",
-        "Enol Ayo",
-        "Francisco Morán",
-        "Javier Usón",
-        "Jesús Gutierrez",
-        "Julián Cabrera",
-        "Isa Rodriguez",
-        "Leyre Encío",
-        "Marcos Rodrigo",
-        "Marta Goyena",
-        "Marta Orduna",
-        "Martina",
-        "Matteo",
-        "Miki",
-        "Narciso García",
-        "Pablo Pérez",
-        "Victoria",
-    ]
-    selected_user = st.radio("Select your name:", name_options)
-    if st.button("Next", key="step1_next") and selected_user:
-        st.session_state.users.append(selected_user)
+    participant = st.radio(
+        label="Select your name:",
+        options=st.session_state.users,
+        index=st.session_state.users.index(st.session_state.participant)
+    )
+    
+    # Select participant
+    if st.button("Next", key="step1_next") and participant:
+        st.session_state.participant = participant
         st.session_state.poll_state = 1
+        st.session_state.current_selections = {"Name": participant}
 
-    # Show Step 2 only if Step 1 is completed
+    # Step 2: Drink (only if step 1 completed)
     if st.session_state.poll_state > 0:
         st.header("Select your drink")
         drinks_options = [
@@ -66,16 +54,14 @@ def poll(selections_file):
             "Manzanilla",
             "Té",
         ]
-        selected_drinks = st.radio("Choose your drinks:", drinks_options)
+        drink = st.radio("Choose your drinks:", drinks_options)
 
-        if st.button("Next", key="step2_next") and selected_drinks:
-            st.session_state.current_selections.append({
-                "Name": st.session_state.users[-1],
-                "Drinks": selected_drinks
-            })
+        # Select drink
+        if st.button("Next", key="step2_next") and drink:
+            st.session_state.current_selections['Drinks'] = drink
             st.session_state.poll_state = 2
 
-    # Show Step 3 only if Step 2 is completed
+    # Step 3: Food (only if step 2 completed)
     if st.session_state.poll_state > 1:
         st.header("Select your food")
         food_options = [
@@ -89,11 +75,16 @@ def poll(selections_file):
             "Tortilla",
             "Yogurt",
         ]
-        selected_food = st.radio("Choose your food:", food_options)
+        food = st.radio("Choose your food:", food_options)
 
-        if st.button("Save Selections", key="save_selections") and selected_food:
-            st.session_state.current_selections[-1]["Food"] = selected_food
-            df = pd.DataFrame(st.session_state.current_selections)
-            save_current_selection_to_file(df, selections_file)
-            st.success(f"Selections saved for {st.session_state.users[-1]}!")
+        # Select food
+        if st.button("Save") and food:
+            st.session_state.current_selections['Food'] = food
+            
+            # Save selections
+            df = pd.DataFrame(st.session_state.current_selections, index=[0])
+            save_current_selections(df, selections_file)
+            
+            # Success & reset
+            st.success(f"Selections saved for {st.session_state.current_selections['Name']}!")
             st.session_state.poll_state = 0

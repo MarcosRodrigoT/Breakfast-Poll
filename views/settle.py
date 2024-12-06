@@ -7,6 +7,10 @@ import matplotlib.pyplot as plt
 
 def settle(history_dir, debts_file):
     st.title("💲Settle💲")
+    
+    # Check if user moved to other menu
+    if st.session_state.state != 'Settle':
+        st.session_state.state = 'Settle'
 
     try:
         # Find the latest history directory

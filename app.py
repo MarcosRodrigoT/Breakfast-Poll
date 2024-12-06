@@ -3,7 +3,7 @@ import subprocess
 import streamlit as st
 
 from views import poll, current, history, settle
-from utils import load_current_selections, load_history
+from utils import load_current_selections, load_history, load_users
 
 
 # Local Directory Configuration
@@ -13,7 +13,7 @@ SELECTION_FILE = "tmp/current_selections.csv"
 BAR_FILE = "tmp/bar.csv"
 MACHINE_FILE = "tmp/machine.csv"
 DEBTS_FILE = "tmp/debts.csv"
-
+USERS_FILE = "inputs/users.yaml"
 
 # Set name and icon to webpage
 st.set_page_config(
@@ -21,10 +21,13 @@ st.set_page_config(
     page_icon="☕",
 )
 
+# Initialize session state
+if 'state' not in st.session_state:
+    st.session_state.state = 'Poll'
 
 # Initialize all required session state variables
 if "users" not in st.session_state:
-    st.session_state.users = []
+    st.session_state.users = load_users(USERS_FILE)
 if "current_selections" not in st.session_state:
     st.session_state.current_selections = []
 if "step" not in st.session_state:
@@ -33,10 +36,8 @@ if "history" not in st.session_state:
     st.session_state.history = load_history(HISTORY_DIR, SELECTION_FILE, BAR_FILE, MACHINE_FILE, DEBTS_FILE)
     st.session_state.current_selections = load_current_selections(SELECTION_FILE).to_dict(orient="records")
 
-
 # Sidebar for navigating through different views
 menu = st.sidebar.selectbox("Select View", ["Poll", "Current", "Settle", "History"])
-
 match menu:
     case "Poll":
         # Poll view with four consecutive steps
