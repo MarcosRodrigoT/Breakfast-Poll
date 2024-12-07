@@ -7,31 +7,32 @@ from utils import save_order
 def poll(order_file):
     st.title("☕Poll☕")
     
+    def step1_onclick():
+        st.session_state.poll_state = 0
+    def step2_onclick():
+        st.session_state.poll_state = 1
+    def step3_onclick():
+        st.session_state.poll_state = 2
+    
     # Check if user moved to other view
     if st.session_state.state != 'Poll':
         st.session_state.state = 'Poll'
         st.session_state.poll_state = 0
-        st.session_state.participant = st.session_state.users[0]
     
     # Initialize state
     if "poll_state" not in st.session_state:
         st.session_state.poll_state = 0
-    
-    # Initialize default participant
-    if "participant" not in st.session_state:
-        st.session_state.participant = st.session_state.users[0]
 
     # Step 1: Participant
     st.header("Add participant")
     participant = st.radio(
         label="Select your name:",
         options=st.session_state.users,
-        index=st.session_state.users.index(st.session_state.participant)
+        on_change=step1_onclick
     )
     
     # Select participant
-    if st.button("Next", key="step1_next") and participant:
-        st.session_state.participant = participant
+    if st.button("Next", key="step1_next", disabled=st.session_state.poll_state > 0, on_click=step2_onclick):
         st.session_state.poll_state = 1
         st.session_state.current_order = {"Name": participant}
 
@@ -53,10 +54,10 @@ def poll(order_file):
             "Manzanilla",
             "Té",
         ]
-        drink = st.radio("Choose your drinks:", drinks_options)
+        drink = st.radio("Choose your drinks:", drinks_options, on_change=step2_onclick)
 
         # Select drink
-        if st.button("Next", key="step2_next") and drink:
+        if st.button("Next", key="step2_next", disabled=st.session_state.poll_state > 1, on_click=step3_onclick):
             st.session_state.current_order['Drinks'] = drink
             st.session_state.poll_state = 2
 

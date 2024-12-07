@@ -280,10 +280,10 @@ def ticket_logic(current_df):
     # Create a DataFrame to display the ticket
     bar_selection = pd.DataFrame.from_dict(bar_count_dict, orient="index", columns=["Amount"])
     ticket_df = pd.DataFrame.from_dict(item_association, orient="index", columns=["Amount"])
-    debts_ticket = pd.DataFrame.from_dict(user_association, orient="index", columns=["Spent"])
+    debts_ticket = pd.DataFrame.from_dict(user_association, orient="index", columns=["Debt"])
 
     # Format prices to show only 2 decimals
-    debts_ticket["Spent"] = debts_ticket["Spent"].apply(lambda x: f"{x:.2f}")
+    debts_ticket["Debt"] = debts_ticket["Debt"].apply(lambda x: f"{x:.2f}")
 
     # Change indexes
     bar_selection = bar_selection.reset_index()
@@ -293,7 +293,7 @@ def ticket_logic(current_df):
     # Rename the columns for clarity
     bar_selection.columns = ["Item", "Amount"]
     ticket_df.columns = ["Item", "Amount"]
-    debts_ticket.columns = ["Name", "Spent"]
+    debts_ticket.columns = ["Name", "Debt"]
 
     # Filter rows to exclude zero amounts
     filtered_bar = bar_selection[bar_selection.index != "Nada"]

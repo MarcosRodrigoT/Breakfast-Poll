@@ -25,7 +25,7 @@ def format_date(date_str):
 
 
 # Load history from the local directory
-def load_history(history_dir, selections_file, bar_file, machine_file, debts_file):
+def load_history(history_dir, whopaid_file, order_file, bar_file, machine_file, debts_file):
     
     # Load history directories
     history_dirs = [d for d in os.listdir(history_dir) if os.path.isdir(os.path.join(history_dir, d))]
@@ -36,7 +36,8 @@ def load_history(history_dir, selections_file, bar_file, machine_file, debts_fil
         dir_path = os.path.join(history_dir, directory)
 
         # Load data
-        selection_df = pd.read_csv(os.path.join(dir_path, selections_file.split("/")[-1]))
+        whopaid = load_whopaid(os.path.join(dir_path, whopaid_file.split("/")[-1]))
+        order_df = pd.read_csv(os.path.join(dir_path, order_file.split("/")[-1]))
         bar_df = pd.read_csv(os.path.join(dir_path, bar_file.split("/")[-1]))
         machine_df = pd.read_csv(os.path.join(dir_path, machine_file.split("/")[-1]))
         debts_df = pd.read_csv(os.path.join(dir_path, debts_file.split("/")[-1]))
@@ -48,7 +49,8 @@ def load_history(history_dir, selections_file, bar_file, machine_file, debts_fil
         history.append(
             {
                 "Date": directory,
-                "Order": selection_df,
+                "Whopaid": whopaid,
+                "Order": order_df,
                 "Bar": bar_df,
                 "Machine": machine_df,
                 "Debts": debts_df,
@@ -58,7 +60,7 @@ def load_history(history_dir, selections_file, bar_file, machine_file, debts_fil
 
 
 # Save the current summary to a text file in the local history directory
-def save_history(users, history_dir, whopaid_file, order_file, bar_file, machine_file, debts_file):
+def save_history(users, history_dir, whopaid_file, order_file, bar_file, machine_file, debts_file, backup_file=''):
     whopaid, price = "", 0
     
     # Create directory based on timestamp
@@ -91,7 +93,7 @@ def save_history(users, history_dir, whopaid_file, order_file, bar_file, machine
         aux.to_csv(debts_file_, index=False)
 
     # Update accumulated debts
-    update_debts(users, history_dir, debts_file, whopaid, price)
+    update_debts(users, history_dir, debts_file, whopaid, price, backup_file)
     
     # Remove tmp data
     os.remove(whopaid_file)

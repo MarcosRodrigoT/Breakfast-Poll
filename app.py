@@ -15,7 +15,7 @@ BAR_FILE = "tmp/bar.csv"
 MACHINE_FILE = "tmp/machine.csv"
 DEBTS_FILE = "tmp/debts.csv"
 USERS_FILE = "inputs/users.yaml"
-BACKUP_FILE = "inputs/settleup_backup.yaml"
+BACKUP_FILE = "inputs/settleup_backup.csv"
 
 # Set name and icon to webpage
 st.set_page_config(
@@ -37,13 +37,13 @@ match menu:
         poll(ORDER_FILE)
     case "Current":
         # Current view to display the current order
-        current(HISTORY_DIR, WHOPAID_FILE, ORDER_FILE, BAR_FILE, MACHINE_FILE, DEBTS_FILE)
+        current(HISTORY_DIR, WHOPAID_FILE, ORDER_FILE, BAR_FILE, MACHINE_FILE, DEBTS_FILE, BACKUP_FILE)
     case "Debts":
         # Debts view to check debts
-        debts(HISTORY_DIR, DEBTS_FILE)
+        debts(HISTORY_DIR, DEBTS_FILE, BACKUP_FILE)
     case "History":
         # History view to check past summaries
-        history(HISTORY_DIR, ORDER_FILE, BAR_FILE, MACHINE_FILE, DEBTS_FILE)
+        history(HISTORY_DIR, WHOPAID_FILE, ORDER_FILE, BAR_FILE, MACHINE_FILE, DEBTS_FILE)
 
 
 if __name__ == "__main__":

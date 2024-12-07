@@ -1,11 +1,12 @@
 import os
+import numpy as np
 import pandas as pd
 import streamlit as st
 
-from utils import load_history, load_order, save_history, save_whopaid, ticket_logic
+from utils import load_history, save_history, save_whopaid, load_order, get_last_debts, ticket_logic
 
 
-def current(history_dir, whopaid_file, order_file, bar_file, machine_file, debts_file):
+def current(history_dir, whopaid_file, order_file, bar_file, machine_file, debts_file, backup_file=''):
     st.title("💥Current💥")
     
     # Check if user moved to other view
@@ -42,7 +43,7 @@ def current(history_dir, whopaid_file, order_file, bar_file, machine_file, debts
         st.dataframe(bar_ticket, hide_index=True, use_container_width=True)
         st.subheader("Paying Ticket")
         st.dataframe(machine_ticket, hide_index=True, use_container_width=True)
-        st.subheader("Settle Up Ticket")
+        st.subheader("Debts Ticket")
         st.dataframe(debts_ticket, hide_index=True, use_container_width=True)
 
         # Save tickets
@@ -52,12 +53,21 @@ def current(history_dir, whopaid_file, order_file, bar_file, machine_file, debts
 
         # Get total price
         st.header("💸Pay💸")
-        total_price = sum([float(price) for price in debts_ticket["Spent"]])
+        total_price = sum([float(price) for price in debts_ticket["Debt"]])
         st.write(f"**Total Price:** {total_price:.2f} €")
         
+        # Get historic debts
+        historic_debts_, _ = get_last_debts(history_dir, st.session_state.users, backup_file)
+        historic_debts = pd.merge(debts_ticket.drop(columns=["Debt"]), historic_debts_, on="Name", how="left")
+        historic_debts = historic_debts.sort_values(by="Debt", ascending=False)
+        
         # Decide who pays
-        debts_ticket = debts_ticket.sort_values(by="Spent", ascending=False)
-        possible_whopays = debts_ticket.apply(lambda row: f"{row['Name']} - {row['Spent']}", axis=1).tolist()
+        possible_whopays = historic_debts.apply(
+            lambda row: f"{row['Name']}: "
+                        f"{':red[+' if row['Debt'] > 0 else (':green[-' if row['Debt'] < 0 else '')}"
+                        f"{abs(row['Debt']):.2f}{' €]' if row['Debt'] != 0 else ' €'}",
+            axis=1
+        ).tolist()
         whopays = st.radio("Decide who pays:", possible_whopays, on_change=get_ticket_onclick)
         
         # Close poll
@@ -66,7 +76,7 @@ def current(history_dir, whopaid_file, order_file, bar_file, machine_file, debts
                 
                 # Print who pays
                 st.write("")
-                whopaid = whopays.split(' - ')[0]
+                whopaid = whopays.split(': ')[0]
                 st.write(f"**{whopaid} will pay {total_price:.2f} €**")
                 
                 # Display warning
@@ -79,9 +89,9 @@ def current(history_dir, whopaid_file, order_file, bar_file, machine_file, debts
                     save_whopaid(whopaid_file, whopaid, total_price)
                     
                     # Save data to history
-                    timestamp = save_history(st.session_state.users, history_dir, whopaid_file, order_file, bar_file, machine_file, debts_file)
+                    timestamp = save_history(st.session_state.users, history_dir, whopaid_file, order_file, bar_file, machine_file, debts_file, backup_file)
                     st.success(f"Poll saved to history at {timestamp}")
-                    st.session_state.history = load_history(history_dir, order_file, bar_file, machine_file, debts_file)
+                    st.session_state.history = load_history(history_dir, whopaid_file, order_file, bar_file, machine_file, debts_file)
 
                     # Clear local current selections
                     if os.path.exists(order_file):
@@ -94,4 +104,8 @@ def current(history_dir, whopaid_file, order_file, bar_file, machine_file, debts
                     st.session_state.order_state = 0
                 
                 # Confirm close poll
-                st.button("Confirm", type="primary", on_click=close_poll)
+                col1, col2 = st.columns([1, 5])  # Makes the 2nd column 5 times wider than the 1st one
+                with col1:
+                    st.button("Confirm", type="primary", on_click=close_poll)
+                with col2:
+                    st.button("Cancel", on_click=get_ticket_onclick)
