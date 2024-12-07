@@ -33,7 +33,7 @@ def history(history_dir, whopaid_file, order_file, bar_file, machine_file, debts
                 st.dataframe(record["Machine"], hide_index=True, use_container_width=True)
                 st.markdown("#### Who Paid")
                 name, price = record["Whopaid"]
-                st.write(f"**{name} paid {price} €**")
+                st.write(f"**{name} paid {price:.2f} €**")
                 st.markdown("#### Debts")
                 st.dataframe(record["Debts"], hide_index=True, use_container_width=True)
 

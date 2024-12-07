@@ -40,7 +40,7 @@ match menu:
         current(HISTORY_DIR, WHOPAID_FILE, ORDER_FILE, BAR_FILE, MACHINE_FILE, DEBTS_FILE, BACKUP_FILE)
     case "Debts":
         # Debts view to check debts
-        debts(HISTORY_DIR, DEBTS_FILE, BACKUP_FILE)
+        debts(HISTORY_DIR, USERS_FILE, DEBTS_FILE, BACKUP_FILE)
     case "History":
         # History view to check past summaries
         history(HISTORY_DIR, WHOPAID_FILE, ORDER_FILE, BAR_FILE, MACHINE_FILE, DEBTS_FILE)

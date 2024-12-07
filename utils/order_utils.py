@@ -13,11 +13,11 @@ def load_order(order_file):
 
 
 # Save current order to the local CSV file without overwriting previous data
-def save_order(current_order, order_file):
+def save_order(current_order, order_file, combine=True):
     current_order["Drinks"] = current_order["Drinks"].apply(lambda x: ", ".join(x) if isinstance(x, list) else x)
     current_order["Food"] = current_order["Food"].apply(lambda x: ", ".join(x) if isinstance(x, list) else x)
 
-    if os.path.exists(order_file):
+    if os.path.exists(order_file) and combine:
         existing_order = pd.read_csv(order_file)
         combined_order = pd.concat([existing_order, current_order]).drop_duplicates()
     else:
@@ -296,7 +296,7 @@ def ticket_logic(current_df):
     debts_ticket.columns = ["Name", "Debt"]
 
     # Filter rows to exclude zero amounts
-    filtered_bar = bar_selection[bar_selection.index != "Nada"]
+    filtered_bar = bar_selection[bar_selection["Item"] != "Nada"]
     filtered_machine = ticket_df[ticket_df["Amount"] > 0]
     
     return filtered_bar, filtered_machine, debts_ticket

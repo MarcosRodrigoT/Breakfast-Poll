@@ -4,15 +4,19 @@ import seaborn as sns
 import streamlit as st
 import matplotlib.pyplot as plt
 
-from utils import load_debts
+from utils import load_debts, load_users, save_users
 
 
-def debts(history_dir, debts_file, backup_file=''):
+def debts(history_dir, users_file, debts_file, backup_file=''):
     st.title("💲Debts💲")
     
     # Check if user moved to other menu
     if st.session_state.state != 'Debts':
         st.session_state.state = 'Debts'
+        st.session_state.users = load_users(users_file)
+        st.session_state.user_msg = {}
+        st.session_state.new_user = ''
+        st.session_state.new_debt = 0.0
 
     # Find the latest history directory
     history_dirs = sorted(
@@ -20,11 +24,6 @@ def debts(history_dir, debts_file, backup_file=''):
         key=lambda x: pd.to_datetime(x, format="%Y-%m-%d_%H-%M-%S"),
         reverse=True,
     )
-    
-    # # If no history, do nothing
-    # if len(history_dirs) == 0:
-    #     st.write("No history records found.")
-    #     return
 
     # Load last historic debts
     if len(history_dirs) > 0:
@@ -88,3 +87,59 @@ def debts(history_dir, debts_file, backup_file=''):
             debt_sign = f"{':red[+' if row['Debt'] > 0 else (':green[-' if row['Debt'] < 0 else '')}"
             debt_value = f"{abs(row['Debt']):.2f}{' €]' if row['Debt'] != 0 else ' €'}"
             st.write(f"{debt_sign} {debt_value}")
+    
+    # Add user
+    st.header("Add a New User")
+    st.session_state.new_user = st.text_input("Enter the new user's name:")
+    st.session_state.new_user = st.session_state.new_user.strip()
+    st.session_state.new_debt = st.number_input(
+        "Enter the starting debt for the user:", format="%.2f"
+    )
+    if len(st.session_state.new_user) > 0:
+        st.write(f"User {st.session_state.new_user} will be added, with debt {st.session_state.new_debt} €")
+    
+    # Handle success/warning onclick
+    if 'user_msg' not in st.session_state:
+        st.session_state.user_msg = {}
+    if 'success' in st.session_state.user_msg:
+        st.success(st.session_state.user_msg['success'], icon="🎉")
+        st.session_state.user_msg = {}
+    if 'warning' in st.session_state.user_msg:
+        st.warning(st.session_state.user_msg['warning'], icon="⚠️")
+        st.session_state.user_msg = {}
+    
+    # Add user onclick
+    def add_user_onclick():
+        if st.session_state.new_user not in st.session_state.users:
+            
+            # Add starting debt
+            if os.path.exists(backup_file):
+                backup_data = pd.read_csv(backup_file)
+                
+                # Check if user is in backup file
+                if st.session_state.new_user not in backup_data['Name'].values:
+                    
+                    # Add debt
+                    new_row = pd.DataFrame({"Name": [st.session_state.new_user], "Debt": [st.session_state.new_debt]})
+                    updated_backup = pd.concat([backup_data, new_row], ignore_index=True)
+                    updated_backup = updated_backup.sort_values(
+                        by="Name",
+                        key=lambda x: x.map(lambda name: (name != "Invitado", name))
+                    )
+                    updated_backup.to_csv(backup_file, index=False)
+                    
+                    # Add user
+                    st.session_state.users.append(st.session_state.new_user)
+                    st.session_state.users = sorted(st.session_state.users, key=lambda x: (x != "Invitado", x))
+                    save_users(st.session_state.users, users_file)
+                    
+                    st.session_state.user_msg['success'] = f"User '{st.session_state.new_user}' added successfully with debt {st.session_state.new_debt:.2f} €!"
+                else:
+                    st.session_state.user_msg['warning'] = f"User '{st.session_state.new_user}' already exists in {backup_file}. User not added."
+            else:
+                st.session_state.user_msg['warning'] = f"Backup file '{backup_file}' does not exist. User not added."
+        else:
+            st.session_state.user_msg['warning'] = f"User '{st.session_state.new_user}' already exists in {users_file}. User not added."
+
+    # Add user button
+    st.button("Add User", disabled=len(st.session_state.new_user) == 0 or len(str(st.session_state.new_debt)) == 0, on_click=add_user_onclick)

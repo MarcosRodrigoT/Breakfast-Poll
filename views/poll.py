@@ -18,6 +18,7 @@ def poll(order_file):
     if st.session_state.state != 'Poll':
         st.session_state.state = 'Poll'
         st.session_state.poll_state = 0
+        st.session_state.success = False
     
     # Initialize state
     if "poll_state" not in st.session_state:
@@ -30,6 +31,14 @@ def poll(order_file):
         options=st.session_state.users,
         on_change=step1_onclick
     )
+    
+    # Print success message here if poll was saved successfully
+    if "success" not in st.session_state:
+        st.session_state.success = False
+    else:
+        if st.session_state.success:
+            st.success(f"Selections saved for {st.session_state.current_order['Name']}!", icon="🎉")
+            st.session_state.success = False
     
     # Select participant
     if st.button("Next", key="step1_next", disabled=st.session_state.poll_state > 0, on_click=step2_onclick):
@@ -77,8 +86,8 @@ def poll(order_file):
         ]
         food = st.radio("Choose your food:", food_options)
 
-        # Select food
-        if st.button("Save") and food:
+        # Save selections on click
+        def save_onclick():
             st.session_state.current_order['Food'] = food
             
             # Save selections
@@ -86,5 +95,9 @@ def poll(order_file):
             save_order(df, order_file)
             
             # Success & reset
-            st.success(f"Selections saved for {st.session_state.current_order['Name']}!")
+            # st.success(f"Selections saved for {st.session_state.current_order['Name']}!")
+            st.session_state.success = True
             st.session_state.poll_state = 0
+        
+        # Select food button
+        st.button("Save", on_click=save_onclick)

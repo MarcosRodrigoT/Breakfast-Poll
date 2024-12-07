@@ -72,4 +72,29 @@ def load_debts(debts_file, users=[], backup_file=''):
         else:
             debts = pd.DataFrame({"Name": users, "Debt": [0.0] * len(users)})
             debts["Debt"] = debts["Debt"].astype(float)
+    
+    # Check if all users are in debts['Name']
+    missing_users = [user for user in users if user not in debts['Name'].values]
+    
+    # If missing users, check in the backup file
+    if missing_users and os.path.exists(backup_file):
+        backup_debts = pd.read_csv(backup_file)
+        
+        for user in missing_users.copy():
+            if user in backup_debts['Name'].values:
+                # Add the user's debt from the backup file
+                user_debt = backup_debts.loc[backup_debts['Name'] == user, 'Debt'].values[0]
+                debts = pd.concat([debts, pd.DataFrame({"Name": [user], "Debt": [user_debt]})], ignore_index=True)
+                missing_users.remove(user)
+    
+    # Add remaining missing users with 0 debt
+    for user in missing_users:
+        debts = pd.concat([debts, pd.DataFrame({"Name": [user], "Debt": [0.0]})], ignore_index=True)
+    
+    # Sort by name, but Invitado goes on top
+    debts = debts.sort_values(
+        by="Name",
+        key=lambda x: x.map(lambda name: (name != "Invitado", name))
+    )
+    
     return debts
