@@ -9,11 +9,13 @@ def update_debts(users, history_dir, debts_file, whopaid='', price=0, backup_fil
     historic_debts, history_dirs = get_last_debts(history_dir, users, backup_file, debt_update=True)
 
     # Load current debts from debts file
-    current_debts = load_debts(debts_file, users, backup_file)
+    current_debts = load_debts(debts_file, users)
     current_debts = dict(zip(current_debts["Name"], current_debts["Debt"].astype(float)))
 
     # Update debts: Merge current debts with historic debts
     historic_debts.set_index("Name", inplace=True)
+    print(historic_debts)
+    print(current_debts)
     for user, debt in current_debts.items():
         if user == whopaid:
             debt -= price
