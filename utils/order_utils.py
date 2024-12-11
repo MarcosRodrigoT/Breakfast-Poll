@@ -51,6 +51,7 @@ def ticket_logic(current_df):
         "Descafeinado con leche": (1.2, "Café"),
         "Descafeinado con leche desnatada": (1.2, "Café"),
         "Aguasusia susia": (1.2, "Café"),
+        "Té con leche": (1.2, "Café"),
         "Colacao": (1.5, "Colacao"),
         "Té": (0.9, "Infusión"),
         "Manzanilla": (0.9, "Infusión"),

@@ -62,6 +62,7 @@ def poll(order_file):
             "Italiano",
             "Manzanilla",
             "Té",
+            "Té con leche"
         ]
         drink = st.radio("Choose your drinks:", drinks_options, on_change=step2_onclick)
 
