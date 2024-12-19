@@ -61,8 +61,8 @@ def ticket_logic(current_df):
         "Croissant plancha": (2.5, "Croissant"),
         "Palmera chocolate": (1.5, "Palmera"),
         "Palmera chocolate blanco": (1.5, "Palmera"),
-        "Tortilla": (1.5, "Tortilla"),
-        "Yogurt": (1.5, "Yogurt"),
+        "Tortilla": (1.4, "Tortilla"),
+        "Yogurt": (0.9, "Yogurt"),
         "Nada": (0.0, "Nada"),
     }
 
