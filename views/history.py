@@ -4,7 +4,7 @@ from utils import load_history, format_date
 
 
 def history(history_dir, whopaid_file, order_file, bar_file, machine_file, debts_file):
-    st.title("📜History📜")
+    st.title("History 📜")
     
     # Check if user moved to other menu
     if st.session_state.state != 'History':

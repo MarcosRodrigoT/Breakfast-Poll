@@ -2,7 +2,7 @@ import os
 import subprocess
 import streamlit as st
 
-from views import poll, current, history, debts
+from views import poll, current, history, debts, spotlight
 from utils import load_users
 
 
@@ -30,20 +30,22 @@ if "users" not in st.session_state:
     st.session_state.users = load_users(USERS_FILE)
 
 # Sidebar for navigating through different views
-menu = st.sidebar.selectbox("Select View", ["Poll", "Current", "Debts", "History"])
+menu = st.sidebar.selectbox("Select View", ["Poll ☕", "Current 💥", "Debts 💲", "History 📜", "Spotlight 🎇"])
 match menu:
-    case "Poll":
+    case "Poll ☕":
         # Poll view to create an order
         poll(ORDER_FILE)
-    case "Current":
+    case "Current 💥":
         # Current view to display the current order
         current(HISTORY_DIR, WHOPAID_FILE, ORDER_FILE, BAR_FILE, MACHINE_FILE, DEBTS_FILE, BACKUP_FILE)
-    case "Debts":
+    case "Debts 💲":
         # Debts view to check debts
         debts(HISTORY_DIR, USERS_FILE, DEBTS_FILE, BACKUP_FILE)
-    case "History":
+    case "History 📜":
         # History view to check past summaries
         history(HISTORY_DIR, WHOPAID_FILE, ORDER_FILE, BAR_FILE, MACHINE_FILE, DEBTS_FILE)
+    case "Spotlight 🎇":
+        spotlight()
 
 
 if __name__ == "__main__":

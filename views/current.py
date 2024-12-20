@@ -7,7 +7,7 @@ from utils import load_history, save_history, save_whopaid, save_order, load_ord
 
 
 def current(history_dir, whopaid_file, order_file, bar_file, machine_file, debts_file, backup_file=''):
-    st.title("💥Current💥")
+    st.title("Current 💥")
     
     # Check if user moved to other view
     if st.session_state.state != 'Current':

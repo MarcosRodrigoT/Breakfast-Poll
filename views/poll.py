@@ -5,7 +5,7 @@ from utils import save_order
 
 
 def poll(order_file):
-    st.title("☕Poll☕")
+    st.title("Poll ☕")
     
     def step1_onclick():
         st.session_state.poll_state = 0

@@ -8,7 +8,7 @@ from utils import load_debts, load_users, save_users
 
 
 def debts(history_dir, users_file, debts_file, backup_file=''):
-    st.title("💲Debts💲")
+    st.title("Debts 💲")
     
     # Check if user moved to other menu
     if st.session_state.state != 'Debts':
