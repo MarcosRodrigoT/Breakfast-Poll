@@ -55,7 +55,7 @@ match menu:
     
     # History view to check past summaries
     case "History 📜":
-        history(HISTORY_DIR, WHO_FILE, ORD_FILE, BAR_FILE, MAC_FILE, DEB_FILE, LST_FILE)
+        history(HISTORY_DIR, WHO_FILE, ORD_FILE, BAR_FILE, MAC_FILE, DEB_FILE)
     
     # Spotlight view to see the story of the person with larger debt
     case "Spotlight 🎇":

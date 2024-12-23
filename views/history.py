@@ -3,7 +3,7 @@ from datetime import datetime
 from utils import load_history, format_date
 
 
-def history(history_dir, whopaid_file, order_file, bar_file, machine_file, debts_file, last_file):
+def history(history_dir, whopaid_file, order_file, bar_file, machine_file, debts_file):
     st.title("History 📜")
     
     # Check if user moved to other menu
@@ -11,7 +11,7 @@ def history(history_dir, whopaid_file, order_file, bar_file, machine_file, debts
         st.session_state.state = 'History'
 
     # Load history if it's not already loaded
-    history = load_history(history_dir, whopaid_file, order_file, bar_file, machine_file, debts_file, last_file)
+    history = load_history(history_dir, whopaid_file, order_file, bar_file, machine_file, debts_file)
 
     # Sort history by the date key in descending order
     history = sorted(history, key=lambda x: datetime.strptime(x["Date"], "%Y-%m-%d_%H-%M-%S"), reverse=True)
@@ -34,10 +34,8 @@ def history(history_dir, whopaid_file, order_file, bar_file, machine_file, debts
                 st.dataframe(record["Bar"], hide_index=True, use_container_width=True)
                 st.markdown("#### Machine")
                 st.dataframe(record["Machine"], hide_index=True, use_container_width=True)
-                st.markdown("#### Participants' Debts")
+                st.markdown("#### Debts")
                 st.dataframe(record["Debts"], hide_index=True, use_container_width=True)
-                st.markdown("#### Updated Debts")
-                st.dataframe(record["Last"], hide_index=True, use_container_width=True)
 
     else:
         st.write("No history records found.")

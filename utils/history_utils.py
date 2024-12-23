@@ -1,5 +1,6 @@
 import os
 import logging
+import pandas as pd
 from datetime import datetime
 
 from utils.data_utils import load_whopaid, save_whopaid, load_csv, save_csv
@@ -23,7 +24,7 @@ def format_date(date_str):
 
 
 # Load history from the local directory
-def load_history(history_dir, whopaid_file, order_file, bar_file, machine_file, debts_file, last_file):
+def load_history(history_dir, whopaid_file, order_file, bar_file, machine_file, debts_file):
     
     # Load history directories
     history_dirs = [d for d in os.listdir(history_dir) if os.path.isdir(os.path.join(history_dir, d))]
@@ -39,11 +40,9 @@ def load_history(history_dir, whopaid_file, order_file, bar_file, machine_file, 
         bar_df = load_csv(os.path.join(dir_path, bar_file.split("/")[-1]))
         machine_df = load_csv(os.path.join(dir_path, machine_file.split("/")[-1]))
         debts_df = load_csv(os.path.join(dir_path, debts_file.split("/")[-1]))
-        last_df = load_csv(os.path.join(dir_path, last_file.split("/")[-1]))
 
         # Format prices to show only 2 decimals
         debts_df["Debt"] = debts_df["Debt"].apply(lambda x: f"{x:.2f}")
-        last_df["Debt"] = last_df["Debt"].apply(lambda x: f"{x:.2f}")
 
         # Save data
         history.append(
@@ -54,7 +53,6 @@ def load_history(history_dir, whopaid_file, order_file, bar_file, machine_file, 
                 "Bar": bar_df,
                 "Machine": machine_df,
                 "Debts": debts_df,
-                "Last": last_df,
             }
         )
     return history
@@ -74,25 +72,25 @@ def save_history(history_dir, whopaid_file, order_file, bar_file, machine_file, 
     bar_file_ = os.path.join(history_dir_, bar_file.split("/")[-1])
     machine_file_ = os.path.join(history_dir_, machine_file.split("/")[-1])
     debts_file_ = os.path.join(history_dir_, debts_file.split("/")[-1])
-    last_file_ = os.path.join(history_dir_, last_file.split("/")[-1])
 
     # Move tmp files to history
-    if os.path.exists(order_file):
+    if os.path.exists(whopaid_file):
         whopaid, price = load_whopaid(whopaid_file)
         save_whopaid(whopaid_file_, whopaid, price)
     if os.path.exists(order_file):
-        save_csv(load_csv(order_file), order_file_)
+        order = load_csv(order_file)
+        debts = load_csv(debts_file)
+        combined = pd.merge(order, debts, on="Name", how="inner") # Combine order and debts
+        save_csv(combined, order_file_)
     if os.path.exists(bar_file):
         save_csv(load_csv(bar_file), bar_file_)
     if os.path.exists(machine_file):
         save_csv(load_csv(machine_file), machine_file_)
-    if os.path.exists(debts_file):
-        save_csv(load_csv(debts_file), debts_file_)
 
     # Update accumulated debts (and move it to history)
     update_debts(whopaid_file, debts_file, last_file)
     if os.path.exists(last_file):
-        save_csv(load_csv(last_file), last_file_)
+        save_csv(load_csv(last_file), debts_file_)
     
     # Remove tmp data
     os.remove(whopaid_file)
