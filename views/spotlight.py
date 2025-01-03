@@ -16,7 +16,7 @@ def spotlight(last_file):
     debtor = sorted_debts.loc[0, "Name"]
 
     # Add an image
-    st.image("inputs/images/mrt.jpg", caption=debtor, use_container_width=True)
+    st.image("inputs/spotlight.png", caption=debtor, use_container_width=True)
 
     # Add a long text
     prompt = """
