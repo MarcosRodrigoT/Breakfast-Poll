@@ -3,8 +3,7 @@ import logging
 import pandas as pd
 from datetime import datetime
 
-from utils.debts_utils import update_debts
-from utils.order_utils import load_whopaid, save_whopaid
+from utils.data_utils import load_whopaid, save_whopaid, load_csv, save_csv
 
 
 # Configure logging
@@ -37,10 +36,10 @@ def load_history(history_dir, whopaid_file, order_file, bar_file, machine_file, 
 
         # Load data
         whopaid = load_whopaid(os.path.join(dir_path, whopaid_file.split("/")[-1]))
-        order_df = pd.read_csv(os.path.join(dir_path, order_file.split("/")[-1]))
-        bar_df = pd.read_csv(os.path.join(dir_path, bar_file.split("/")[-1]))
-        machine_df = pd.read_csv(os.path.join(dir_path, machine_file.split("/")[-1]))
-        debts_df = pd.read_csv(os.path.join(dir_path, debts_file.split("/")[-1]))
+        order_df = load_csv(os.path.join(dir_path, order_file.split("/")[-1]))
+        bar_df = load_csv(os.path.join(dir_path, bar_file.split("/")[-1]))
+        machine_df = load_csv(os.path.join(dir_path, machine_file.split("/")[-1]))
+        debts_df = load_csv(os.path.join(dir_path, debts_file.split("/")[-1]))
 
         # Format prices to show only 2 decimals
         debts_df["Debt"] = debts_df["Debt"].apply(lambda x: f"{x:.2f}")
@@ -60,8 +59,7 @@ def load_history(history_dir, whopaid_file, order_file, bar_file, machine_file, 
 
 
 # Save the current summary to a text file in the local history directory
-def save_history(users, history_dir, whopaid_file, order_file, bar_file, machine_file, debts_file, backup_file=''):
-    whopaid, price = "", 0
+def save_history(history_dir, whopaid_file, order_file, bar_file, machine_file, debts_file, last_file):
     
     # Create directory based on timestamp
     timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
@@ -76,24 +74,23 @@ def save_history(users, history_dir, whopaid_file, order_file, bar_file, machine
     debts_file_ = os.path.join(history_dir_, debts_file.split("/")[-1])
 
     # Move tmp files to history
-    if os.path.exists(order_file):
+    if os.path.exists(whopaid_file):
         whopaid, price = load_whopaid(whopaid_file)
         save_whopaid(whopaid_file_, whopaid, price)
     if os.path.exists(order_file):
-        aux = pd.read_csv(order_file)
-        aux.to_csv(order_file_, index=False)
+        order = load_csv(order_file)
+        debts = load_csv(debts_file)
+        combined = pd.merge(order, debts, on="Name", how="inner") # Combine order and debts
+        save_csv(combined, order_file_)
     if os.path.exists(bar_file):
-        aux = pd.read_csv(bar_file)
-        aux.to_csv(bar_file_, index=False)
+        save_csv(load_csv(bar_file), bar_file_)
     if os.path.exists(machine_file):
-        aux = pd.read_csv(machine_file)
-        aux.to_csv(machine_file_, index=False)
-    if os.path.exists(debts_file):
-        aux = pd.read_csv(debts_file)
-        aux.to_csv(debts_file_, index=False)
+        save_csv(load_csv(machine_file), machine_file_)
 
-    # Update accumulated debts
-    update_debts(users, history_dir, debts_file, whopaid, price, backup_file)
+    # Update accumulated debts (and move it to history)
+    update_debts(whopaid_file, debts_file, last_file)
+    if os.path.exists(last_file):
+        save_csv(load_csv(last_file), debts_file_)
     
     # Remove tmp data
     os.remove(whopaid_file)
@@ -103,3 +100,30 @@ def save_history(users, history_dir, whopaid_file, order_file, bar_file, machine
     os.remove(debts_file)
 
     return timestamp
+
+
+def update_debts(whopaid_file, debts_file, last_file):
+    
+    # Load who paid
+    whopaid, price = load_whopaid(whopaid_file)
+    
+    # Get latest debts
+    last_debts = load_csv(last_file)
+    last_debts.set_index("Name", inplace=True)
+
+    # Load current debts from debts file
+    curr_debts = load_csv(debts_file)
+    curr_debts = dict(zip(curr_debts["Name"], curr_debts["Debt"].astype(float)))
+
+    # Update debts: Merge current debts with historic debts
+    for user, debt in curr_debts.items():
+        if user == whopaid:
+            debt -= price
+        if user in last_debts.index:
+            last_debts.at[user, "Debt"] += debt
+        else:
+            last_debts.loc[user] = debt
+    last_debts.reset_index(inplace=True)
+
+    # Save the new debts as last debts
+    save_csv(last_debts, last_file)

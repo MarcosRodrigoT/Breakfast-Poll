@@ -5,7 +5,7 @@ from utils import save_order
 
 
 def poll(order_file):
-    st.title("☕Poll☕")
+    st.title("Poll ☕")
     
     def step1_onclick():
         st.session_state.poll_state = 0
@@ -31,14 +31,6 @@ def poll(order_file):
         options=st.session_state.users,
         on_change=step1_onclick
     )
-    
-    # Print success message here if poll was saved successfully
-    if "success" not in st.session_state:
-        st.session_state.success = False
-    else:
-        if st.session_state.success:
-            st.success(f"Selections saved for {st.session_state.current_order['Name']}!", icon="🎉")
-            st.session_state.success = False
     
     # Select participant
     if st.button("Next", key="step1_next", disabled=st.session_state.poll_state > 0, on_click=step2_onclick):
@@ -70,6 +62,14 @@ def poll(order_file):
         if st.button("Next", key="step2_next", disabled=st.session_state.poll_state > 1, on_click=step3_onclick):
             st.session_state.current_order['Drinks'] = drink
             st.session_state.poll_state = 2
+    
+    # Print success message here if poll was saved successfully
+    if "success" not in st.session_state:
+        st.session_state.success = False
+    else:
+        if st.session_state.success:
+            st.success(f"Selections saved for {st.session_state.current_order['Name']}!", icon="🎉")
+            st.session_state.success = False
 
     # Step 3: Food (only if step 2 completed)
     if st.session_state.poll_state > 1:
@@ -96,7 +96,6 @@ def poll(order_file):
             save_order(df, order_file)
             
             # Success & reset
-            # st.success(f"Selections saved for {st.session_state.current_order['Name']}!")
             st.session_state.success = True
             st.session_state.poll_state = 0
         

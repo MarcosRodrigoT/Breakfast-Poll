@@ -3,11 +3,11 @@ import numpy as np
 import pandas as pd
 import streamlit as st
 
-from utils import load_history, save_history, save_whopaid, save_order, load_order, get_last_debts, ticket_logic
+from utils import save_history, save_whopaid, save_order, load_order, load_csv, save_csv, ticket_logic
 
 
-def current(history_dir, whopaid_file, order_file, bar_file, machine_file, debts_file, backup_file=''):
-    st.title("💥Current💥")
+def current(history_dir, whopaid_file, order_file, bar_file, machine_file, debts_file, last_file):
+    st.title("Current 💥")
     
     # Check if user moved to other view
     if st.session_state.state != 'Current':
@@ -51,22 +51,22 @@ def current(history_dir, whopaid_file, order_file, bar_file, machine_file, debts
             st.dataframe(debts_ticket, hide_index=True, use_container_width=True)
 
             # Save tickets
-            bar_ticket.to_csv(bar_file, index=False)
-            machine_ticket.to_csv(machine_file, index=False)
-            debts_ticket.to_csv(debts_file, index=False)
+            save_csv(bar_ticket, bar_file)
+            save_csv(machine_ticket, machine_file)
+            save_csv(debts_ticket, debts_file)
 
             # Get total price
-            st.header("💸Pay💸")
+            st.header("Pay 💸")
             total_price = sum([float(price) for price in debts_ticket["Debt"]])
             st.write(f"**Total Price:** {total_price:.2f} €")
             
             # Get historic debts
-            historic_debts_, _ = get_last_debts(history_dir, st.session_state.users, backup_file)
-            historic_debts = pd.merge(debts_ticket.drop(columns=["Debt"]), historic_debts_, on="Name", how="left")
-            historic_debts = historic_debts.sort_values(by="Debt", ascending=False)
+            last_debts = load_csv(last_file)
+            last_debts = pd.merge(debts_ticket.drop(columns=["Debt"]), last_debts, on="Name", how="left")
+            last_debts = last_debts.sort_values(by="Debt", ascending=False)
             
             # Decide who pays
-            possible_whopays = historic_debts.apply(
+            possible_whopays = last_debts.apply(
                 lambda row: f"{row['Name']}: "
                             f"{':red[+' if row['Debt'] > 0 else (':green[-' if row['Debt'] < 0 else '')}"
                             f"{abs(row['Debt']):.2f}{' €]' if row['Debt'] != 0 else ' €'}",
@@ -93,9 +93,8 @@ def current(history_dir, whopaid_file, order_file, bar_file, machine_file, debts
                         save_whopaid(whopaid_file, whopaid, total_price)
                         
                         # Save data to history
-                        timestamp = save_history(st.session_state.users, history_dir, whopaid_file, order_file, bar_file, machine_file, debts_file, backup_file)
+                        timestamp = save_history(history_dir, whopaid_file, order_file, bar_file, machine_file, debts_file, last_file)
                         st.success(f"Poll saved to history at {timestamp}", icon="🎉")
-                        st.session_state.history = load_history(history_dir, whopaid_file, order_file, bar_file, machine_file, debts_file)
 
                         # Clear local current selections
                         if os.path.exists(order_file):

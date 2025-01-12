@@ -26,17 +26,6 @@ def save_order(current_order, order_file, combine=True):
     combined_order.to_csv(order_file, index=False)
 
 
-def save_whopaid(whopaid_file, whopaid, price):
-    with open(whopaid_file, 'w') as f:
-        f.write(f"{whopaid} - {price}")
-
-
-def load_whopaid(whopaid_file):
-    with open(whopaid_file, 'r') as f:
-        line = f.readline().strip()
-        name, price = line.split(' - ')
-        return name, float(price)
-
 # Complex ticke logic
 def ticket_logic(current_df):
     

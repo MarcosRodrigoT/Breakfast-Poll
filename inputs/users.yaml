@@ -1,29 +1,84 @@
-users:
-- Invitado
-- Anna
-- Carlos Cortés
-- Carlos Cuevas
-- Carlos Roberto
-- Celia
-- César
-- Dani Berjón
-- Dani Fuertes
-- David
-- Enmin
-- Enol
-- Fernando
-- Francisco
-- Isa
-- Jesús
-- Julián
-- Leyre
-- Marcos
-- Marta Goyena
-- Marta Orduna
-- Martina
-- Matteo
-- Miki
-- Narciso
-- Pablo
-- Usón
-- Victoria
+Anna:
+  description: null
+  settleup: 1.65
+Carlos Cortés:
+  description: null
+  settleup: 5.64
+Carlos Cuevas:
+  description: null
+  settleup: -2.25
+Carlos Roberto:
+  description: null
+  settleup: -3.97
+Celia:
+  description: null
+  settleup: -2.45
+César:
+  description: null
+  settleup: -4.16
+Dani Berjón:
+  description: null
+  settleup: 4.48
+Dani Fuertes:
+  description: null
+  settleup: 6.25
+David:
+  description: null
+  settleup: 10.50
+Enmin:
+  description: null
+  settleup: 4.99
+Enol:
+  description: null
+  settleup: -2.95
+Fernando:
+  description: null
+  settleup: 0.0
+Francisco:
+  description: null
+  settleup: 3.30
+Invitado:
+  description: null
+  settleup: 0.0
+Isa:
+  description: null
+  settleup: -9.42
+Jesús:
+  description: null
+  settleup: -10.43
+Julián:
+  description: null
+  settleup: 5.02
+Leyre:
+  description: null
+  settleup: -4.24
+Marcos:
+  description: null
+  settleup: 4.74
+Marta Goyena:
+  description: null
+  settleup: 6.66
+Marta Orduna:
+  description: null
+  settleup: -2.34
+Martina:
+  description: null
+  settleup: -4.80
+Matteo:
+  description: null
+  settleup: 4.63
+Miki:
+  description: null
+  settleup: 4.75
+Narciso:
+  description: null
+  settleup: 0.0
+Pablo:
+  description: null
+  settleup: 0.0
+Usón:
+  description: null
+  settleup: 1.25
+Victoria:
+  description: null
+  settleup: -6.90
