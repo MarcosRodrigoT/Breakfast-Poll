@@ -16,15 +16,23 @@ def spotlight(last_file):
     debts_data = load_csv(last_file)
     sorted_debts = debts_data.sort_values(by="Debt", ascending=False).reset_index(drop=True)
 
-    # Display generated images and backstories for top 3 debtors
-    for i, symbol in zip(range(3), ["🥇", "🥈", "🥉"]):
+    # Display generated images and backstories for all debtors
+    for i in range(len(sorted_debts)):
         debtor = sorted_debts.loc[i, "Name"]
 
         # Obtain debtor's nickname
         with open(f"/home/mrt/Projects/pix2pix/backstories/{debtor}/nickname.txt", "r") as f:
             nickname = f.read()
 
-        # Display debtor name as subtitle
+        # Display debtor name with medals for top 3
+        if i == 0:
+            symbol = "🥇"
+        elif i == 1:
+            symbol = "🥈"
+        elif i == 2:
+            symbol = "🥉"
+        else:
+            symbol = f"{i + 1} - "
         st.subheader(f"{symbol}{debtor}, {nickname}")
 
         # Display generated image
