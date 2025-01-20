@@ -42,3 +42,12 @@ def spotlight(last_file):
         with open(f"/home/mrt/Projects/pix2pix/backstories/{debtor}/backstory.txt", "r") as f:
             prompt = f.read()
         st.markdown(prompt)
+
+        # Display audio player
+        audio_file_path = f"/home/mrt/Projects/pix2pix/backstories/{debtor}/speech.wav"
+        try:
+            with open(audio_file_path, "rb") as audio_file:
+                audio_bytes = audio_file.read()
+            st.audio(audio_bytes, format="audio/wav")
+        except FileNotFoundError:
+            pass
