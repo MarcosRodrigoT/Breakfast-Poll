@@ -1,6 +1,9 @@
 Anna:
   description: null
   settleup: 1.65
+Antonio:
+  description: null
+  settleup: 0.00
 Carlos Cortés:
   description: null
   settleup: 5.64
@@ -85,3 +88,6 @@ Usón:
 Victoria:
   description: null
   settleup: -6.90
+Álvaro:
+  description: null
+  settleup: 0.0
