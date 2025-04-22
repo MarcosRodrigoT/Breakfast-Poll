@@ -28,7 +28,6 @@ def save_order(current_order, order_file, combine=True):
 
 # Complex ticke logic
 def ticket_logic(current_df):
-    
     # Define item prices and categories
     item_prices = {
         "Café con leche": (1.2, "Café"),
@@ -248,14 +247,14 @@ def ticket_logic(current_df):
                 if user_name in variable_users and user_name in drinker:
                     user_price = user_price[1]
                 elif user_name in variable_users and user_name not in drinker:
-                    user_price = user_price[1] + ((0.3*tea_combos)/not_drinkers)
+                    user_price = user_price[1] + ((0.3 * tea_combos) / not_drinkers)
             elif not_drinkers == 0:
                 if user_name in variable_users and user_name in infusion_drinker:
-                    user_price = user_price[1] + ((0.3*tea_combos)/len(infusion_drinker))
+                    user_price = user_price[1] + ((0.3 * tea_combos) / len(infusion_drinker))
                 elif user_name in variable_users and user_name not in infusion_drinker:
                     user_price = user_price[1]
             elif not_drinkers > 0 and not_drinkers < tea_combos:
-                user_price = user_price[1] + ((0.3*tea_combos)/len(variable_users))
+                user_price = user_price[1] + ((0.3 * tea_combos) / len(variable_users))
 
             user_association[user_name] = user_price if user_name not in user_association else user_price + user_association[user_name]
     else:
@@ -288,5 +287,5 @@ def ticket_logic(current_df):
     # Filter rows to exclude zero amounts
     filtered_bar = bar_selection[bar_selection["Item"] != "Nada"]
     filtered_machine = ticket_df[ticket_df["Amount"] > 0]
-    
+
     return filtered_bar, filtered_machine, debts_ticket

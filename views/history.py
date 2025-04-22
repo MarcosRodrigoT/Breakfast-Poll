@@ -5,10 +5,10 @@ from utils import load_history, format_date
 
 def history(history_dir, whopaid_file, order_file, bar_file, machine_file, debts_file):
     st.title("History 📜")
-    
+
     # Check if user moved to other menu
-    if st.session_state.state != 'History':
-        st.session_state.state = 'History'
+    if st.session_state.state != "History":
+        st.session_state.state = "History"
 
     # Load history if it's not already loaded
     history = load_history(history_dir, whopaid_file, order_file, bar_file, machine_file, debts_file)
@@ -19,10 +19,9 @@ def history(history_dir, whopaid_file, order_file, bar_file, machine_file, debts
     # Display history in reverse chronological order
     if history:
         for record in history:
-            
             # Format the date for display
             formatted_date = format_date(record["Date"])
-            
+
             # Show data
             with st.expander(f"{formatted_date}"):
                 st.markdown("#### Who Paid")

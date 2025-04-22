@@ -1,7 +1,6 @@
 import os
 import subprocess
 import streamlit as st
-
 from views import poll, current, history, debts, spotlight
 from utils import load_users, load_settleup, save_csv
 
@@ -77,4 +76,7 @@ if __name__ == "__main__":
     except (socket.error, ConnectionRefusedError):
         print(f"Launching Streamlit app on port {PORT}...")
         # Run Streamlit programmatically
-        subprocess.run(["streamlit", "run", __file__, "--server.port", str(PORT), "--server.baseUrlPath=/cafe", "--server.headless=false", "--browser.serverAddress=www.gti.ssr.upm.es"], check=True)
+        subprocess.run(
+            ["streamlit", "run", __file__, "--server.port", str(PORT), "--server.baseUrlPath=/cafe", "--server.headless=false", "--browser.serverAddress=www.gti.ssr.upm.es"],
+            check=True,
+        )

@@ -1,29 +1,29 @@
 import os
-import numpy as np
 import pandas as pd
 import streamlit as st
-
 from utils import save_history, save_whopaid, save_order, load_order, load_csv, save_csv, ticket_logic
 
 
 def current(history_dir, whopaid_file, order_file, bar_file, machine_file, debts_file, last_file):
     st.title("Current 💥")
-    
+
     # Check if user moved to other view
-    if st.session_state.state != 'Current':
-        st.session_state.state = 'Current'
+    if st.session_state.state != "Current":
+        st.session_state.state = "Current"
         st.session_state.order_state = 0
         st.session_state.current_df = load_order(order_file)
 
     # Initialize state
     if "order_state" not in st.session_state:
         st.session_state.order_state = 0
-    
+
     # On click events
     def edit_ticket_onclick():
         st.session_state.order_state = -1
+
     def get_ticket_onclick():
         st.session_state.order_state = 1
+
     def close_poll_onclick():
         st.session_state.order_state = 2
 
@@ -38,7 +38,6 @@ def current(history_dir, whopaid_file, order_file, bar_file, machine_file, debts
     # Get ticket
     if st.session_state.order_state >= 0:
         if st.button("Get Ticket", disabled=st.session_state.order_state > 0, on_click=get_ticket_onclick) or st.session_state.order_state > 0:
-
             # Calculate ticket logic
             bar_ticket, machine_ticket, debts_ticket = ticket_logic(st.session_state.current_df)
 
@@ -59,39 +58,35 @@ def current(history_dir, whopaid_file, order_file, bar_file, machine_file, debts
             st.header("Pay 💸")
             total_price = sum([float(price) for price in debts_ticket["Debt"]])
             st.write(f"**Total Price:** {total_price:.2f} €")
-            
+
             # Get historic debts
             last_debts = load_csv(last_file)
             last_debts = pd.merge(debts_ticket.drop(columns=["Debt"]), last_debts, on="Name", how="left")
             last_debts = last_debts.sort_values(by="Debt", ascending=False)
-            
+
             # Decide who pays
             possible_whopays = last_debts.apply(
-                lambda row: f"{row['Name']}: "
-                            f"{':red[+' if row['Debt'] > 0 else (':green[-' if row['Debt'] < 0 else '')}"
-                            f"{abs(row['Debt']):.2f}{' €]' if row['Debt'] != 0 else ' €'}",
-                axis=1
+                lambda row: f"{row['Name']}: {':red[+' if row['Debt'] > 0 else (':green[-' if row['Debt'] < 0 else '')}{abs(row['Debt']):.2f}{' €]' if row['Debt'] != 0 else ' €'}",
+                axis=1,
             ).tolist()
             whopays = st.radio("Decide who pays:", possible_whopays, on_change=get_ticket_onclick)
-            
+
             # Close poll
             if len(possible_whopays) > 0:
                 if (st.button("Close Poll", type="primary", disabled=st.session_state.order_state > 1, on_click=close_poll_onclick) or st.session_state.order_state > 1) and whopays:
-                    
                     # Print who pays
                     st.write("")
-                    whopaid = whopays.split(': ')[0]
+                    whopaid = whopays.split(": ")[0]
                     st.write(f"**{whopaid} will pay {total_price:.2f} €**")
-                    
+
                     # Display warning
                     st.warning("Warning: Are you sure you want to close the poll? You will delete the current order", icon="⚠️")
 
                     # Confirm close poll
                     def close_poll():
-                        
                         # Save who paid
                         save_whopaid(whopaid_file, whopaid, total_price)
-                        
+
                         # Save data to history
                         timestamp = save_history(history_dir, whopaid_file, order_file, bar_file, machine_file, debts_file, last_file)
                         st.success(f"Poll saved to history at {timestamp}", icon="🎉")
@@ -105,7 +100,7 @@ def current(history_dir, whopaid_file, order_file, bar_file, machine_file, debts
 
                         # Reset session state for current selections and ticket generation status
                         st.session_state.order_state = 0
-                    
+
                     # Confirm close poll
                     col1, col2 = st.columns([1, 5])  # Makes the 2nd column 5 times wider than the 1st one
                     with col1:
@@ -116,7 +111,6 @@ def current(history_dir, whopaid_file, order_file, bar_file, machine_file, debts
     # Edit ticket allows removing rows from current order
     if st.session_state.order_state <= 0:
         if st.button("Edit Ticket", disabled=st.session_state.order_state < 0, on_click=edit_ticket_onclick) or st.session_state.order_state == -1:
-            
             # Display the multiselect with formatted row strings
             remove_rows = st.multiselect(
                 "Select rows to remove:",
@@ -128,10 +122,10 @@ def current(history_dir, whopaid_file, order_file, bar_file, machine_file, debts
             def remove_onclick():
                 # Remove rows
                 st.session_state.current_df = st.session_state.current_df.drop(index=remove_rows).reset_index(drop=True)
-                
+
                 # Save new dataframe
                 save_order(st.session_state.current_df, order_file, combine=False)
-                
+
                 # Remove tmp data
                 if os.path.exists(bar_file):
                     os.remove(bar_file)
@@ -139,11 +133,10 @@ def current(history_dir, whopaid_file, order_file, bar_file, machine_file, debts
                     os.remove(machine_file)
                 if os.path.exists(debts_file):
                     os.remove(debts_file)
-                
+
                 # Print success and exit
                 st.success("Selected rows removed!", icon="🎉")
                 st.session_state.order_state = 0
-            
+
             # Remove button
             st.button("Remove", disabled=len(remove_rows) == 0, on_click=remove_onclick)
-    

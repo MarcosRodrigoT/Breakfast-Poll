@@ -2,7 +2,6 @@ import os
 import logging
 import pandas as pd
 from datetime import datetime
-
 from utils.data_utils import load_whopaid, save_whopaid, load_csv, save_csv
 
 
@@ -25,10 +24,9 @@ def format_date(date_str):
 
 # Load history from the local directory
 def load_history(history_dir, whopaid_file, order_file, bar_file, machine_file, debts_file):
-    
     # Load history directories
     history_dirs = [d for d in os.listdir(history_dir) if os.path.isdir(os.path.join(history_dir, d))]
-    
+
     # For each directory, get data
     history = []
     for directory in history_dirs:
@@ -60,7 +58,6 @@ def load_history(history_dir, whopaid_file, order_file, bar_file, machine_file, 
 
 # Save the current summary to a text file in the local history directory
 def save_history(history_dir, whopaid_file, order_file, bar_file, machine_file, debts_file, last_file):
-    
     # Create directory based on timestamp
     timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     history_dir_ = os.path.join(history_dir, timestamp)
@@ -80,7 +77,7 @@ def save_history(history_dir, whopaid_file, order_file, bar_file, machine_file, 
     if os.path.exists(order_file):
         order = load_csv(order_file)
         debts = load_csv(debts_file)
-        combined = pd.merge(order, debts, on="Name", how="inner") # Combine order and debts
+        combined = pd.merge(order, debts, on="Name", how="inner")  # Combine order and debts
         save_csv(combined, order_file_)
     if os.path.exists(bar_file):
         save_csv(load_csv(bar_file), bar_file_)
@@ -91,7 +88,7 @@ def save_history(history_dir, whopaid_file, order_file, bar_file, machine_file, 
     update_debts(whopaid_file, debts_file, last_file)
     if os.path.exists(last_file):
         save_csv(load_csv(last_file), debts_file_)
-    
+
     # Remove tmp data
     os.remove(whopaid_file)
     os.remove(order_file)
@@ -103,10 +100,9 @@ def save_history(history_dir, whopaid_file, order_file, bar_file, machine_file, 
 
 
 def update_debts(whopaid_file, debts_file, last_file):
-    
     # Load who paid
     whopaid, price = load_whopaid(whopaid_file)
-    
+
     # Get latest debts
     last_debts = load_csv(last_file)
     last_debts.set_index("Name", inplace=True)
