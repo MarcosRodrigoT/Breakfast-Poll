@@ -43,6 +43,9 @@ Fernando:
 Francisco:
   description: null
   settleup: 3.30
+Hugo:
+  description: null
+  settleup: 0.0
 Invitado:
   description: null
   settleup: 0.0
