@@ -8,8 +8,8 @@ def morosos(last_file):
     st.title("Morosos 👻")
 
     # Check if user moved to other view
-    if st.session_state.state != "Spotlight":
-        st.session_state.state = "Spotlight"
+    if st.session_state.state != "Morosos":
+        st.session_state.state = "Morosos"
 
     # Sort by debt
     debts_data = load_csv(last_file)

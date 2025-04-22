@@ -55,7 +55,7 @@ match menu:
     case "History 📜":
         history(HISTORY_DIR, WHO_FILE, ORD_FILE, BAR_FILE, MAC_FILE, DEB_FILE)
 
-    # Spotlight view to see the story of the person with larger debt
+    # Morosos view to see the stories of everyone
     case "Morosos 👻":
         morosos(LST_FILE)
 
