@@ -23,7 +23,8 @@ def save_yaml(data, yaml_file):
 
 def load_settleup(yaml_file):
     data = load_yaml(yaml_file)
-    rows = [{"Name": k, "Debt": v["settleup"]} for k, v in data.items()]
+    # rows = [{"Name": k, "Debt": v["settleup"]} for k, v in data.items()]
+    rows = [{"Name": k} for k, v in data.items()]
     return pd.DataFrame(rows)
 
 
@@ -56,22 +57,19 @@ def save_whopaid(whopaid_file, whopaid, price):
         f.write(f"{whopaid} - {price}")
 
 
-def add_user(yaml_file, new_user, new_debt, new_desc, last_file):
+def add_user(yaml_file, new_user, new_debt, last_file):
     # Load existing data from the YAML file
     data = load_yaml(yaml_file)
 
     # Add user to last debts file
     result = add_user_to_last(last_file, new_user, new_debt)
 
-    # Check if user already exists in YAML file or in last debts file
+    # Check if user already exists
     if new_user in data or not result:
         return False
 
     # Add the new user to the YAML file
-    data[new_user] = {
-        "settleup": new_debt,
-        "description": new_desc,
-    }
+    data[new_user] = 0
 
     # Save the updated data back to the YAML file
     save_yaml(data, yaml_file)

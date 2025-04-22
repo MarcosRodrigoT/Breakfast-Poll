@@ -10,14 +10,12 @@ def poll(order_file, users_file, last_file):
     with st.expander("➕  Add a new user"):
         new_user = st.text_input("User name", key="poll_new_user").strip()
         new_debt = st.number_input("Starting debt (€)", format="%.2f", key="poll_new_debt")
-        new_desc = st.text_input("Description (optional)", key="poll_new_desc")
 
         if len(new_user) > 0:
             st.write(f"**Preview:** {new_user} → {new_debt:.2f} €")
-            st.write(new_desc or "*No description*")
 
         def add_user_onclick():
-            ok = add_user(users_file, new_user, new_debt, new_desc, last_file)
+            ok = add_user(users_file, new_user, new_debt, last_file)
             if ok:
                 # refresh the in‑memory list and let Streamlit re‑run
                 st.session_state.users = load_users(users_file)
@@ -25,7 +23,6 @@ def poll(order_file, users_file, last_file):
                 # clear widgets for convenience
                 st.session_state.poll_new_user = ""
                 st.session_state.poll_new_debt = 0.0
-                st.session_state.poll_new_desc = ""
             else:
                 st.warning(f"User “{new_user}” already exists.", icon="⚠️")
 
