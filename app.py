@@ -1,7 +1,7 @@
 import os
 import subprocess
 import streamlit as st
-from views import poll, current, history, debts, spotlight
+from views import poll, current, history, debts, morosos
 from utils import load_users, load_settleup, save_csv
 
 
@@ -57,7 +57,7 @@ match menu:
 
     # Spotlight view to see the story of the person with larger debt
     case "Morosos 👻":
-        spotlight(LST_FILE)
+        morosos(LST_FILE)
 
 
 if __name__ == "__main__":

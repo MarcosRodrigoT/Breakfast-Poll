@@ -4,7 +4,7 @@ from utils import load_csv
 
 # TODO: As of now, the backstories are generated everyday in Atenea, and these are send to Hiperion.
 #   The project generating the backstories is located at "/home/mrt/Projects/pix2pix". The project also contains a users.yaml file with user data to generate the backstories.
-def spotlight(last_file):
+def morosos(last_file):
     st.title("Morosos 👻")
 
     # Check if user moved to other view
