@@ -41,7 +41,7 @@ menu = st.sidebar.selectbox("Select View", ["Poll ☕", "Current 💥", "Debts �
 match menu:
     # Poll view to create an order
     case "Poll ☕":
-        poll(ORD_FILE)
+        poll(ORD_FILE, USERS_FILE, LST_FILE)
 
     # Current view to display the current order
     case "Current 💥":

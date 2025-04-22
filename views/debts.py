@@ -1,8 +1,7 @@
 import seaborn as sns
 import streamlit as st
 import matplotlib.pyplot as plt
-
-from utils import load_csv, load_users, add_user
+from utils import load_csv, load_users
 
 
 def debts(users_file, last_file):
@@ -73,35 +72,3 @@ def debts(users_file, last_file):
             debt_sign = f"{':red[+' if row['Debt'] > 0 else (':green[-' if row['Debt'] < 0 else '')}"
             debt_value = f"{abs(row['Debt']):.2f}{' €]' if row['Debt'] != 0 else ' €'}"
             st.write(f"{debt_sign} {debt_value}")
-
-    # Add user
-    st.header("Add a New User")
-    st.session_state.new_user = st.text_input("Enter the new user's name:")
-    st.session_state.new_user = st.session_state.new_user.strip()
-    st.session_state.new_debt = st.number_input("Enter the starting debt for the user:", format="%.2f")
-    st.session_state.new_desc = st.text_input("Enter a description for the user:")
-    if len(st.session_state.new_user) > 0:
-        st.write(f"{st.session_state.new_user} will be added with debt {st.session_state.new_debt} € and the following description:")
-        st.write(st.session_state.new_desc)
-
-    # Handle success/warning onclick
-    if "user_msg" not in st.session_state:
-        st.session_state.user_msg = {}
-    if "success" in st.session_state.user_msg:
-        st.success(st.session_state.user_msg["success"], icon="🎉")
-        st.session_state.user_msg = {}
-    if "warning" in st.session_state.user_msg:
-        st.warning(st.session_state.user_msg["warning"], icon="⚠️")
-        st.session_state.user_msg = {}
-
-    # Add user onclick
-    def add_user_onclick():
-        result = add_user(users_file, st.session_state.new_user, st.session_state.new_debt, st.session_state.new_desc, last_file)
-        st.session_state.users = load_users(users_file)
-        if result:
-            st.session_state.user_msg["success"] = f"User '{st.session_state.new_user}' added successfully with debt {st.session_state.new_debt:.2f} €!"
-        else:
-            st.session_state.user_msg["warning"] = f"User '{st.session_state.new_user}' already exists in {users_file} or in {last_file}. User not added."
-
-    # Add user button
-    st.button("Add User", disabled=len(st.session_state.new_user) == 0 or len(str(st.session_state.new_debt)) == 0, on_click=add_user_onclick)

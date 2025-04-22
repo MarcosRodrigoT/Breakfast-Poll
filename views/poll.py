@@ -1,10 +1,35 @@
 import pandas as pd
 import streamlit as st
-from utils import save_order
+from utils import save_order, add_user, load_users
 
 
-def poll(order_file):
+def poll(order_file, users_file, last_file):
     st.title("Poll ☕")
+
+    # Add new user
+    with st.expander("➕  Add a new user"):
+        new_user = st.text_input("User name", key="poll_new_user").strip()
+        new_debt = st.number_input("Starting debt (€)", format="%.2f", key="poll_new_debt")
+        new_desc = st.text_input("Description (optional)", key="poll_new_desc")
+
+        if len(new_user) > 0:
+            st.write(f"**Preview:** {new_user} → {new_debt:.2f} €")
+            st.write(new_desc or "*No description*")
+
+        def add_user_onclick():
+            ok = add_user(users_file, new_user, new_debt, new_desc, last_file)
+            if ok:
+                # refresh the in‑memory list and let Streamlit re‑run
+                st.session_state.users = load_users(users_file)
+                st.success(f"User “{new_user}” added! 🎉")
+                # clear widgets for convenience
+                st.session_state.poll_new_user = ""
+                st.session_state.poll_new_debt = 0.0
+                st.session_state.poll_new_desc = ""
+            else:
+                st.warning(f"User “{new_user}” already exists.", icon="⚠️")
+
+        st.button("Save user", disabled=len(new_user) == 0, on_click=add_user_onclick)
 
     def step1_onclick():
         st.session_state.poll_state = 0
