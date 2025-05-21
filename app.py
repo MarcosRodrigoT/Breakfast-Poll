@@ -3,6 +3,7 @@ import subprocess
 import streamlit as st
 from views import poll, current, history, debts, morosos
 from utils import load_users, load_settleup, save_csv
+import time
 
 
 # Inputs directory
@@ -22,12 +23,6 @@ BAR_FILE = os.path.join(TMP_DIR, "bar.csv")  # What to ask at the bar
 MAC_FILE = os.path.join(TMP_DIR, "machine.csv")  # What to put in the paying machine
 DEB_FILE = os.path.join(TMP_DIR, "debts.csv")  # Debts per user
 
-# Set name and icon to webpage
-st.set_page_config(
-    page_title="Café GTI",
-    page_icon="☕",
-)
-
 # Initialize session state
 if "state" not in st.session_state:
     st.session_state.state = "Poll"
@@ -36,8 +31,41 @@ if "users" not in st.session_state:
 if not os.path.isfile(LST_FILE):
     save_csv(load_settleup(USERS_FILE), LST_FILE)
 
+# Additional paraphernalia to get the sidebar to auto-collapse
+if "sidebar_state" not in st.session_state:
+    st.session_state.sidebar_state = "collapsed"  # page loads collapsed
+if "menu" not in st.session_state:
+    st.session_state.menu = "Poll ☕"
+if "collapse_stage" not in st.session_state:
+    st.session_state.collapse_stage = 0  # 0 = idle
+if st.session_state.collapse_stage == 1:
+    st.session_state.sidebar_state = "expanded"  # fake open state
+
+
+def want_to_collapse():
+    st.session_state.collapse_stage = 1
+
+
+# Set name and icon to webpage
+st.set_page_config(
+    page_title="Café GTI",
+    page_icon="☕",
+    initial_sidebar_state=st.session_state.sidebar_state,
+)
+
+
 # Sidebar for navigating through different views
-menu = st.sidebar.selectbox("Select View", ["Poll ☕", "Current 💥", "Debts 💲", "History 📜", "Morosos 👻"])
+menu = st.sidebar.selectbox("Select View", ["Poll ☕", "Current 💥", "Debts 💲", "History 📜", "Morosos 👻"], key="menu", on_change=want_to_collapse)
+
+# Sidebar auto-collapse paraphernalia
+if st.session_state.collapse_stage == 1:
+    time.sleep(0.05)  # let Phase 1 reach browser
+    st.session_state.sidebar_state = "collapsed"
+    st.session_state.collapse_stage = 2  # so we don’t loop forever
+    st.rerun()
+if st.session_state.collapse_stage == 2:
+    st.session_state.collapse_stage = 0  # back to “idle”
+
 match menu:
     # Poll view to create an order
     case "Poll ☕":
