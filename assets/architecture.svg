@@ -1,0 +1,126 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 850 520">
+  <defs>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="2" dy="2" stdDeviation="2" flood-opacity="0.2"/>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="850" height="520" fill="#f8f9fa"/>
+
+  <!-- Title -->
+  <text x="425" y="30" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" font-weight="bold" fill="#333">Breakfast-Poll - Application Architecture</text>
+
+  <!-- Streamlit App Container -->
+  <rect x="20" y="50" width="810" height="455" rx="10" fill="none" stroke="#ff4b4b" stroke-width="2" stroke-dasharray="6,3"/>
+  <text x="40" y="75" font-family="Arial, sans-serif" font-size="12" font-style="italic" fill="#ff4b4b">Streamlit App (app.py) - Port 8500</text>
+
+  <!-- Main app.py box -->
+  <rect x="340" y="90" width="170" height="60" rx="8" fill="#ff4b4b" filter="url(#shadow)"/>
+  <text x="425" y="118" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#fff">app.py</text>
+  <text x="425" y="136" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#ffe0e0">Main entry + Router</text>
+
+  <!-- Views Section -->
+  <rect x="40" y="175" width="770" height="140" rx="8" fill="#fff" stroke="#ddd" stroke-width="1" filter="url(#shadow)"/>
+  <text x="60" y="195" font-family="Arial, sans-serif" font-size="11" font-weight="bold" fill="#666">views/</text>
+
+  <!-- Poll View -->
+  <rect x="60" y="210" width="130" height="85" rx="6" fill="#e3f2fd" stroke="#2196f3" stroke-width="2"/>
+  <text x="125" y="232" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#1565c0">Poll</text>
+  <text x="125" y="248" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="#555">poll.py</text>
+  <line x1="70" y1="258" x2="180" y2="258" stroke="#2196f3" stroke-width="1"/>
+  <text x="125" y="273" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="#666">Create orders</text>
+  <text x="125" y="286" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="#666">Add users</text>
+
+  <!-- Current View -->
+  <rect x="205" y="210" width="130" height="85" rx="6" fill="#fff3e0" stroke="#ff9800" stroke-width="2"/>
+  <text x="270" y="232" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#e65100">Current</text>
+  <text x="270" y="248" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="#555">current.py</text>
+  <line x1="215" y1="258" x2="325" y2="258" stroke="#ff9800" stroke-width="1"/>
+  <text x="270" y="273" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="#666">View/edit orders</text>
+  <text x="270" y="286" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="#666">Generate tickets</text>
+
+  <!-- Debts View -->
+  <rect x="350" y="210" width="130" height="85" rx="6" fill="#e8f5e9" stroke="#4caf50" stroke-width="2"/>
+  <text x="415" y="232" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#2e7d32">Debts</text>
+  <text x="415" y="248" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="#555">debts.py</text>
+  <line x1="360" y1="258" x2="470" y2="258" stroke="#4caf50" stroke-width="1"/>
+  <text x="415" y="273" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="#666">Debt bar chart</text>
+  <text x="415" y="286" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="#666">Podium ranking</text>
+
+  <!-- History View -->
+  <rect x="495" y="210" width="130" height="85" rx="6" fill="#f3e5f5" stroke="#9c27b0" stroke-width="2"/>
+  <text x="560" y="232" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#7b1fa2">History</text>
+  <text x="560" y="248" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="#555">history.py</text>
+  <line x1="505" y1="258" x2="615" y2="258" stroke="#9c27b0" stroke-width="1"/>
+  <text x="560" y="273" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="#666">Past orders</text>
+  <text x="560" y="286" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="#666">Payment records</text>
+
+  <!-- Morosos View -->
+  <rect x="640" y="210" width="130" height="85" rx="6" fill="#fce4ec" stroke="#e91e63" stroke-width="2"/>
+  <text x="705" y="232" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#c2185b">Morosos</text>
+  <text x="705" y="248" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="#555">morosos.py</text>
+  <line x1="650" y1="258" x2="760" y2="258" stroke="#e91e63" stroke-width="1"/>
+  <text x="705" y="273" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="#666">AI images</text>
+  <text x="705" y="286" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="#666">Backstories + TTS</text>
+
+  <!-- Arrow from app.py to views -->
+  <line x1="425" y1="150" x2="425" y2="172" stroke="#555" stroke-width="2"/>
+  <polygon points="420,172 425,182 430,172" fill="#555"/>
+
+  <!-- Utils Section -->
+  <rect x="40" y="340" width="340" height="90" rx="8" fill="#fff" stroke="#ddd" stroke-width="1" filter="url(#shadow)"/>
+  <text x="60" y="360" font-family="Arial, sans-serif" font-size="11" font-weight="bold" fill="#666">utils/</text>
+
+  <rect x="60" y="375" width="95" height="40" rx="4" fill="#e0e0e0" stroke="#9e9e9e" stroke-width="1"/>
+  <text x="107" y="398" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="#555">data_utils.py</text>
+
+  <rect x="165" y="375" width="95" height="40" rx="4" fill="#e0e0e0" stroke="#9e9e9e" stroke-width="1"/>
+  <text x="212" y="398" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="#555">order_utils.py</text>
+
+  <rect x="270" y="375" width="95" height="40" rx="4" fill="#e0e0e0" stroke="#9e9e9e" stroke-width="1"/>
+  <text x="317" y="398" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="#555">history_utils.py</text>
+
+  <!-- Data Files Section -->
+  <rect x="410" y="340" width="400" height="90" rx="8" fill="#fff" stroke="#ddd" stroke-width="1" filter="url(#shadow)"/>
+  <text x="430" y="360" font-family="Arial, sans-serif" font-size="11" font-weight="bold" fill="#666">Data Storage</text>
+
+  <rect x="430" y="375" width="80" height="40" rx="4" fill="#bbdefb" stroke="#2196f3" stroke-width="1"/>
+  <text x="470" y="392" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="#1565c0">inputs/</text>
+  <text x="470" y="405" text-anchor="middle" font-family="Arial, sans-serif" font-size="8" fill="#555">users.yaml</text>
+
+  <rect x="520" y="375" width="80" height="40" rx="4" fill="#c8e6c9" stroke="#4caf50" stroke-width="1"/>
+  <text x="560" y="392" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="#2e7d32">history/</text>
+  <text x="560" y="405" text-anchor="middle" font-family="Arial, sans-serif" font-size="8" fill="#555">*.csv records</text>
+
+  <rect x="610" y="375" width="80" height="40" rx="4" fill="#ffe0b2" stroke="#ff9800" stroke-width="1"/>
+  <text x="650" y="392" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="#e65100">tmp/</text>
+  <text x="650" y="405" text-anchor="middle" font-family="Arial, sans-serif" font-size="8" fill="#555">session data</text>
+
+  <rect x="700" y="375" width="95" height="40" rx="4" fill="#f8bbd9" stroke="#e91e63" stroke-width="1"/>
+  <text x="747" y="392" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="#c2185b">pix2pix/</text>
+  <text x="747" y="405" text-anchor="middle" font-family="Arial, sans-serif" font-size="8" fill="#555">backstories/*</text>
+
+  <!-- Arrows from views to utils/data -->
+  <line x1="210" y1="315" x2="210" y2="337" stroke="#555" stroke-width="1.5"/>
+  <polygon points="205,337 210,347 215,337" fill="#555"/>
+
+  <line x1="610" y1="315" x2="610" y2="337" stroke="#555" stroke-width="1.5"/>
+  <polygon points="605,337 610,347 615,337" fill="#555"/>
+
+  <!-- External link to pix2pix -->
+  <rect x="700" y="440" width="95" height="45" rx="6" fill="#fce4ec" stroke="#e91e63" stroke-width="2" stroke-dasharray="4,2"/>
+  <text x="747" y="460" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" font-weight="bold" fill="#c2185b">pix2pix</text>
+  <text x="747" y="475" text-anchor="middle" font-family="Arial, sans-serif" font-size="8" fill="#555">External project</text>
+
+  <line x1="747" y1="415" x2="747" y2="437" stroke="#e91e63" stroke-width="1.5" stroke-dasharray="4,2"/>
+  <polygon points="742,437 747,447 752,437" fill="#e91e63"/>
+
+  <!-- Legend -->
+  <rect x="40" y="450" width="200" height="45" rx="5" fill="#fff" stroke="#ddd" stroke-width="1"/>
+  <text x="140" y="467" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" font-weight="bold" fill="#555">Legend</text>
+  <rect x="55" y="478" width="12" height="12" fill="#ff4b4b"/>
+  <text x="75" y="488" font-family="Arial, sans-serif" font-size="9" fill="#555">Streamlit</text>
+  <line x1="120" y1="484" x2="145" y2="484" stroke="#555" stroke-width="1.5" stroke-dasharray="4,2"/>
+  <text x="155" y="488" font-family="Arial, sans-serif" font-size="9" fill="#555">External</text>
+</svg>
