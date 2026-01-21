@@ -339,17 +339,18 @@ def statistics(history_dir, whopaid_file, order_file, bar_file, machine_file, de
     col1, col2, col3, col4 = st.columns(4)
 
     with col1:
-        total_orders = len(filtered_df)
-        st.metric("Total Orders", total_orders)
+        unique_days = filtered_df["Date"].dt.date.nunique()
+        st.metric("Breakfast Sessions", unique_days)
 
     with col2:
+        total_orders = len(filtered_df)
+        st.metric("Individual Orders", total_orders)
+
+    with col3:
         total_spent = filtered_df["Debt"].sum()
         st.metric("Total Spent", f"{total_spent:.2f} €")
 
-    with col3:
-        avg_order_value = filtered_df["Debt"].mean()
-        st.metric("Avg Order Value", f"{avg_order_value:.2f} €")
-
     with col4:
-        unique_days = filtered_df["Date"].dt.date.nunique()
-        st.metric("Days Tracked", unique_days)
+        # Calculate average total per session
+        avg_per_session = filtered_df.groupby(filtered_df["Date"].dt.date)["Debt"].sum().mean()
+        st.metric("Avg per Session", f"{avg_per_session:.2f} €")
