@@ -1,7 +1,7 @@
 import os
 import subprocess
 import streamlit as st
-from views import poll, current, history, debts, morosos
+from views import poll, current, history, debts, morosos, statistics
 from utils import load_users, load_settleup, save_csv
 import time
 
@@ -55,7 +55,7 @@ st.set_page_config(
 
 
 # Sidebar for navigating through different views
-menu = st.sidebar.selectbox("Select View", ["Poll ☕", "Current 💥", "Debts 💲", "History 📜", "Morosos 👻"], key="menu", on_change=want_to_collapse)
+menu = st.sidebar.selectbox("Select View", ["Poll ☕", "Current 💥", "Debts 💲", "History 📜", "Statistics 📊", "Morosos 👻"], key="menu", on_change=want_to_collapse)
 
 # Sidebar auto-collapse paraphernalia
 if st.session_state.collapse_stage == 1:
@@ -82,6 +82,10 @@ match menu:
     # History view to check past summaries
     case "History 📜":
         history(HISTORY_DIR, WHO_FILE, ORD_FILE, BAR_FILE, MAC_FILE, DEB_FILE)
+
+    # Statistics view to see analytics
+    case "Statistics 📊":
+        statistics(HISTORY_DIR, WHO_FILE, ORD_FILE, BAR_FILE, MAC_FILE, DEB_FILE, USERS_FILE)
 
     # Morosos view to see the stories of everyone
     case "Morosos 👻":

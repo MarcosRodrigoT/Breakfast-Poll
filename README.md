@@ -28,13 +28,26 @@ A Streamlit-based coffee and breakfast ordering system for GTI (Grupo de Tratami
 - Select who pays and close the poll
 
 ### Debts
-- Bar chart visualization of all debts
+- Interactive horizontal bar chart with red-to-green color gradient
+- Red for debt, white for zero, green for overpayment/credit
 - Podium ranking (gold/silver/bronze for top debtors)
 - Positive = owes money, Negative = has credit
 
 ### History
 - Browse past orders in reverse chronological order
 - View who paid, what was ordered, and individual costs
+
+### Statistics
+- Comprehensive analytics dashboard with interactive Plotly visualizations
+- **Filters**: Date range, users, drinks, and foods with context-aware filtering
+- **Spending Over Time**: Line charts showing daily spending trends (includes zero-value days)
+- **Participation Count**: Bar chart tracking number of orders per day
+- **Item Popularity**: Horizontal bar charts for most popular drinks and foods
+- **User Activity**: Participation frequency with dynamic chart heights
+- **Who Pays**: Payment frequency and total amounts paid by each person with podium
+- **Accumulated Debt Evolution**: Line chart showing debt balance over time
+- **Summary Metrics**: Total sessions, orders, spending, and average per session
+- Consistent color mapping for users across multiple charts
 
 ### Morosos (Hall of Shame)
 - Displays all team members ranked by debt
@@ -54,6 +67,7 @@ Breakfast-Poll/
 │   ├── current.py         # Current order management
 │   ├── debts.py           # Debt visualization
 │   ├── history.py         # Past orders browser
+│   ├── statistics.py      # Analytics dashboard
 │   └── morosos.py         # Hall of shame with AI content
 ├── utils/
 │   ├── data_utils.py      # YAML/CSV loading, user management
@@ -82,7 +96,7 @@ When there are more combo-eligible food items than coffees, the system intellige
 
 - Python 3.10+
 - Streamlit
-- pandas, matplotlib, seaborn
+- pandas, plotly, matplotlib, seaborn
 - Access to `pix2pix/backstories/` for the Morosos view
 
 ## Installation

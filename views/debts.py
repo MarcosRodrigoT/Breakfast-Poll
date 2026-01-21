@@ -1,6 +1,5 @@
-import seaborn as sns
 import streamlit as st
-import matplotlib.pyplot as plt
+import plotly.express as px
 from utils import load_csv, load_users
 
 
@@ -19,33 +18,41 @@ def debts(users_file, last_file):
     # Find the latest history directory
     debts_data = load_csv(last_file)
 
-    # Draw a bar plot with Seaborn
-    plt.figure(figsize=(12, 6))
-    sns.barplot(
-        data=debts_data,
-        x="Name",
-        y="Debt",
-        hue="Name",  # Assign unique colors based on the "Name" column
-        dodge=False,  # Ensures all bars are aligned
-        palette="husl",  # Use a color palette
-    )
-    plt.xlabel("User")
-    plt.ylabel("Debt (€)")
-    plt.ylim(debts_data["Debt"].min() - 1, debts_data["Debt"].max() + 1)  # Set y-axis limits
-    plt.axhline(0, color="black", linestyle="--", linewidth=1)  # Draw horizontal line at y=0
+    # Sort by debt (descending - highest debt first)
+    debts_data_sorted = debts_data.sort_values(by="Debt", ascending=True).reset_index(drop=True)
 
-    # Add a semi-transparent grid
-    plt.grid(
-        which="major",
-        linestyle="--",
-        linewidth=0.5,
-        alpha=0.7,  # Semi-transparency
+    # Calculate dynamic height based on number of users (30px per user, minimum 400px)
+    chart_height = max(400, len(debts_data_sorted) * 30)
+
+    # Create horizontal bar chart with diverging color scale
+    # Red for high debt (positive), white for ~0, green for overpayment (negative)
+    fig = px.bar(
+        debts_data_sorted,
+        x="Debt",
+        y="Name",
+        orientation="h",
+        title="Current Debt by User",
+        color="Debt",
+        color_continuous_scale="RdYlGn_r",  # Red-Yellow-Green reversed (red for positive, green for negative)
+        color_continuous_midpoint=0,  # Center the color scale at 0
+        labels={"Debt": "Debt (€)", "Name": "User"}
     )
 
-    plt.title("Current Debt by User")
-    plt.xticks(rotation=45, ha="right")
-    plt.legend([], [], frameon=False)  # Hide the legend
-    st.pyplot(plt.gcf())
+    fig.update_layout(
+        yaxis={'categoryorder': 'total ascending'},
+        height=chart_height,
+        xaxis_title="Debt (€)",
+        yaxis_title="User"
+    )
+
+    # Add vertical line at x=0 to show the debt/credit boundary
+    fig.add_vline(x=0, line_dash="dash", line_color="gray", opacity=0.7, line_width=2)
+
+    st.plotly_chart(fig, use_container_width=True)
+
+    st.caption("💡 Red indicates debt owed, green indicates overpayment/credit")
+
+    st.divider()
 
     # Sort by debt
     sorted_debts = debts_data.sort_values(by="Debt", ascending=False).reset_index(drop=True)
