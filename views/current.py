@@ -27,93 +27,60 @@ def current(history_dir, whopaid_file, order_file, bar_file, machine_file, debts
     def close_poll_onclick():
         st.session_state.order_state = 2
 
-    # Reload current order
-    if st.button("Reload"):
+    def reload_onclick():
         st.session_state.order_state = 0
+        st.session_state.current_df = load_order(order_file)
 
     # Load current order
     st.session_state.current_df = load_order(order_file)
-    st.dataframe(st.session_state.current_df, hide_index=True, use_container_width=True)
 
-    # Get ticket
-    if st.session_state.order_state >= 0:
-        if st.button("Get Ticket", disabled=st.session_state.order_state > 0, on_click=get_ticket_onclick) or st.session_state.order_state > 0:
-            # Calculate ticket logic
+    # Quick actions at the top
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        st.button("🔄 Reload", on_click=reload_onclick, use_container_width=True)
+    with col2:
+        st.button("✏️ Edit Order", disabled=st.session_state.order_state < 0, on_click=edit_ticket_onclick, use_container_width=True)
+    with col3:
+        st.button("🎫 Generate Ticket", disabled=st.session_state.order_state > 0, on_click=get_ticket_onclick, use_container_width=True, type="primary")
+
+    st.divider()
+
+    # Current order section
+    st.subheader("📋 Current Order")
+
+    # Show metrics
+    num_orders = len(st.session_state.current_df)
+    num_people = st.session_state.current_df["Name"].nunique() if num_orders > 0 else 0
+
+    metric_col1, metric_col2, metric_col3 = st.columns(3)
+    with metric_col1:
+        st.metric("Total Orders", num_orders)
+    with metric_col2:
+        st.metric("Participants", num_people)
+    with metric_col3:
+        if st.session_state.order_state > 0:
+            # Calculate total price only if ticket was generated
             bar_ticket, machine_ticket, debts_ticket = ticket_logic(st.session_state.current_df)
-
-            # Print tickets
-            st.subheader("Items to ask at the bar")
-            st.dataframe(bar_ticket, hide_index=True, use_container_width=True)
-            st.subheader("Paying Ticket")
-            st.dataframe(machine_ticket, hide_index=True, use_container_width=True)
-            st.subheader("Debts Ticket")
-            st.dataframe(debts_ticket, hide_index=True, use_container_width=True)
-
-            # Save tickets
-            save_csv(bar_ticket, bar_file)
-            save_csv(machine_ticket, machine_file)
-            save_csv(debts_ticket, debts_file)
-
-            # Get total price
-            st.header("Pay 💸")
             total_price = sum([float(price) for price in debts_ticket["Debt"]])
-            st.write(f"**Total Price:** {total_price:.2f} €")
+            st.metric("Total to Pay", f"{total_price:.2f} €")
+        else:
+            st.metric("Total to Pay", "—")
 
-            # Get historic debts
-            last_debts = load_csv(last_file)
-            last_debts = pd.merge(debts_ticket.drop(columns=["Debt"]), last_debts, on="Name", how="left")
-            last_debts = last_debts.sort_values(by="Debt", ascending=False)
+    # Display current order
+    if num_orders > 0:
+        st.dataframe(st.session_state.current_df, hide_index=True, use_container_width=True)
+    else:
+        st.info("📭 No orders yet. Go to the Poll view to add orders!")
 
-            # Decide who pays
-            possible_whopays = last_debts.apply(
-                lambda row: f"{row['Name']}: {':red[+' if row['Debt'] > 0 else (':green[-' if row['Debt'] < 0 else '')}{abs(row['Debt']):.2f}{' €]' if row['Debt'] != 0 else ' €'}",
-                axis=1,
-            ).tolist()
-            whopays = st.radio("Decide who pays:", possible_whopays, on_change=get_ticket_onclick)
+    # Edit mode
+    if st.session_state.order_state == -1:
+        st.divider()
+        with st.container(border=True):
+            st.subheader("✏️ Edit Order")
 
-            # Close poll
-            if len(possible_whopays) > 0:
-                if (st.button("Close Poll", type="primary", disabled=st.session_state.order_state > 1, on_click=close_poll_onclick) or st.session_state.order_state > 1) and whopays:
-                    # Print who pays
-                    st.write("")
-                    whopaid = whopays.split(": ")[0]
-                    st.write(f"**{whopaid} will pay {total_price:.2f} €**")
-
-                    # Display warning
-                    st.warning("Warning: Are you sure you want to close the poll? You will delete the current order", icon="⚠️")
-
-                    # Confirm close poll
-                    def close_poll():
-                        # Save who paid
-                        save_whopaid(whopaid_file, whopaid, total_price)
-
-                        # Save data to history
-                        timestamp = save_history(history_dir, whopaid_file, order_file, bar_file, machine_file, debts_file, last_file)
-                        st.success(f"Poll saved to history at {timestamp}", icon="🎉")
-
-                        # Clear local current selections
-                        if os.path.exists(order_file):
-                            os.remove(order_file)
-
-                            # Create an empty CSV to replace the deleted one
-                            pd.DataFrame(columns=["Name", "Drinks", "Food"]).to_csv(order_file, index=False)
-
-                        # Reset session state for current selections and ticket generation status
-                        st.session_state.order_state = 0
-
-                    # Confirm close poll
-                    col1, col2 = st.columns([1, 5])  # Makes the 2nd column 5 times wider than the 1st one
-                    with col1:
-                        st.button("Confirm", type="primary", on_click=close_poll)
-                    with col2:
-                        st.button("Cancel", on_click=get_ticket_onclick)
-
-    # Edit ticket allows removing rows from current order
-    if st.session_state.order_state <= 0:
-        if st.button("Edit Ticket", disabled=st.session_state.order_state < 0, on_click=edit_ticket_onclick) or st.session_state.order_state == -1:
             # Display the multiselect with formatted row strings
             remove_rows = st.multiselect(
-                "Select rows to remove:",
+                "Select orders to remove:",
                 options=st.session_state.current_df.index,
                 format_func=lambda idx: f"{st.session_state.current_df.loc[idx, 'Name']} - {st.session_state.current_df.loc[idx, 'Drinks']} - {st.session_state.current_df.loc[idx, 'Food']}",
             )
@@ -135,8 +102,103 @@ def current(history_dir, whopaid_file, order_file, bar_file, machine_file, debts
                     os.remove(debts_file)
 
                 # Print success and exit
-                st.success("Selected rows removed!", icon="🎉")
+                st.success("Selected orders removed!", icon="🎉")
                 st.session_state.order_state = 0
 
-            # Remove button
-            st.button("Remove", disabled=len(remove_rows) == 0, on_click=remove_onclick)
+            # Action buttons
+            btn_col1, btn_col2 = st.columns([1, 1])
+            with btn_col1:
+                st.button("🗑️ Remove Selected", disabled=len(remove_rows) == 0, on_click=remove_onclick, use_container_width=True, type="primary")
+            with btn_col2:
+                st.button("❌ Cancel", on_click=reload_onclick, use_container_width=True)
+
+    # Ticket generation and payment flow
+    if st.session_state.order_state > 0 and num_orders > 0:
+        st.divider()
+
+        # Calculate ticket logic
+        bar_ticket, machine_ticket, debts_ticket = ticket_logic(st.session_state.current_df)
+
+        # Save tickets
+        save_csv(bar_ticket, bar_file)
+        save_csv(machine_ticket, machine_file)
+        save_csv(debts_ticket, debts_file)
+
+        # Get total price
+        total_price = sum([float(price) for price in debts_ticket["Debt"]])
+
+        # Display tickets in tabs
+        st.subheader("🎫 Tickets")
+        tab1, tab2, tab3 = st.tabs(["📝 Bar Order", "💳 Payment Ticket", "💰 Individual Debts"])
+
+        with tab1:
+            st.caption("Items to request at the bar")
+            st.dataframe(bar_ticket, hide_index=True, use_container_width=True)
+
+        with tab2:
+            st.caption("What appears on the payment machine")
+            st.dataframe(machine_ticket, hide_index=True, use_container_width=True)
+
+        with tab3:
+            st.caption("How much each person owes")
+            st.dataframe(debts_ticket, hide_index=True, use_container_width=True)
+
+        st.divider()
+
+        # Payment section
+        st.subheader("💸 Payment")
+
+        # Get historic debts
+        last_debts = load_csv(last_file)
+        last_debts = pd.merge(debts_ticket.drop(columns=["Debt"]), last_debts, on="Name", how="left")
+        last_debts = last_debts.sort_values(by="Debt", ascending=False)
+
+        # Display total prominently
+        st.info(f"**Total amount to pay:** {total_price:.2f} €")
+
+        # Decide who pays
+        possible_whopays = last_debts.apply(
+            lambda row: f"{row['Name']}: {':red[+' if row['Debt'] > 0 else (':green[-' if row['Debt'] < 0 else '')}{abs(row['Debt']):.2f}{' €]' if row['Debt'] != 0 else ' €'}",
+            axis=1,
+        ).tolist()
+
+        if len(possible_whopays) > 0:
+            whopays = st.radio("👤 Who will pay?", possible_whopays, on_change=get_ticket_onclick)
+
+            # Close poll
+            if st.button("✅ Close Poll & Save to History", type="primary", disabled=st.session_state.order_state > 1, on_click=close_poll_onclick, use_container_width=True) or st.session_state.order_state > 1:
+                if whopays:
+                    whopaid = whopays.split(": ")[0]
+
+                    # Confirmation section
+                    st.divider()
+                    with st.container(border=True):
+                        st.warning("⚠️ **Confirmation Required**", icon="⚠️")
+                        st.write(f"**{whopaid}** will pay **{total_price:.2f} €**")
+                        st.write("This will close the poll and save the order to history. The current order will be cleared.")
+
+                        # Confirm close poll
+                        def close_poll():
+                            # Save who paid
+                            save_whopaid(whopaid_file, whopaid, total_price)
+
+                            # Save data to history
+                            timestamp = save_history(history_dir, whopaid_file, order_file, bar_file, machine_file, debts_file, last_file)
+                            st.success(f"Poll saved to history at {timestamp}", icon="🎉")
+
+                            # Clear local current selections
+                            if os.path.exists(order_file):
+                                os.remove(order_file)
+
+                                # Create an empty CSV to replace the deleted one
+                                pd.DataFrame(columns=["Name", "Drinks", "Food"]).to_csv(order_file, index=False)
+
+                            # Reset session state for current selections and ticket generation status
+                            st.session_state.order_state = 0
+
+                        # Confirm buttons
+                        col1, col2 = st.columns([1, 1])
+                        with col1:
+                            st.button("✔️ Confirm & Close", type="primary", on_click=close_poll, use_container_width=True)
+                        with col2:
+                            st.button("❌ Cancel", on_click=get_ticket_onclick, use_container_width=True)

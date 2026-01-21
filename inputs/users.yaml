@@ -16,7 +16,9 @@ Dani Berjón: 0
 Dani Fuertes: 0
 David: 0
 Enmin: 0
-Enol: 0
+Enol:
+  debt: 0
+  status: hidden
 Esther: 0
 Fernando: 0
 Filippo:
@@ -37,15 +39,21 @@ Julián: 0
 Leyre: 0
 Marcos: 0
 Marta Goyena: 0
-Marta Orduna: 0
-Martina: 0
+Marta Orduna:
+  debt: 0
+  status: hidden
+Martina:
+  debt: 0
+  status: hidden
 Matteo: 0
 Miki:
   debt: 0
   status: hidden
 Narciso: 0
 Pablo: 0
-Sara: 0
+Sara:
+  debt: 0
+  status: hidden
 Usón: 0
 Victoria:
   debt: 0
