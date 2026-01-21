@@ -1,4 +1,5 @@
 import streamlit as st
+import os
 from utils import load_csv
 
 
@@ -18,10 +19,7 @@ def morosos(last_file):
     # Display generated images and backstories for all debtors
     for i in range(len(sorted_debts)):
         debtor = sorted_debts.loc[i, "Name"]
-
-        # Obtain debtor's nickname
-        with open(f"/home/mrt/Projects/pix2pix/backstories/{debtor}/nickname.txt", "r") as f:
-            nickname = f.read()
+        debtor_dir = f"/home/mrt/Projects/pix2pix/backstories/{debtor}"
 
         # Display debtor name with medals for top 3
         if i == 0:
@@ -32,21 +30,50 @@ def morosos(last_file):
             symbol = "🥉"
         else:
             symbol = f"{i + 1} - "
-        st.subheader(f"{symbol}{debtor}, {nickname}")
 
-        # Display generated image
-        st.image(f"/home/mrt/Projects/pix2pix/backstories/{debtor}/image.png", use_container_width=True)
+        # Check if the debtor's assets exist in the pix2pix project
+        if not os.path.exists(debtor_dir):
+            st.subheader(f"{symbol}{debtor}")
+            st.warning(f"⚠️ Assets for **{debtor}** are not available yet. Please add this user to the pix2pix project in **Atenea** at `/home/mrt/Projects/pix2pix`.")
+            st.divider()
+            continue
 
-        # Display backstory
-        with open(f"/home/mrt/Projects/pix2pix/backstories/{debtor}/backstory.txt", "r") as f:
-            prompt = f.read()
-        st.markdown(prompt)
-
-        # Display audio player
-        audio_file_path = f"/home/mrt/Projects/pix2pix/backstories/{debtor}/speech.wav"
+        # Try to load and display the debtor's assets
         try:
-            with open(audio_file_path, "rb") as audio_file:
-                audio_bytes = audio_file.read()
-            st.audio(audio_bytes, format="audio/wav")
-        except FileNotFoundError:
-            pass
+            # Obtain debtor's nickname
+            nickname_file = f"{debtor_dir}/nickname.txt"
+            if os.path.exists(nickname_file):
+                with open(nickname_file, "r") as f:
+                    nickname = f.read()
+                st.subheader(f"{symbol}{debtor}, {nickname}")
+            else:
+                st.subheader(f"{symbol}{debtor}")
+
+            # Display generated image
+            image_file = f"{debtor_dir}/image.png"
+            if os.path.exists(image_file):
+                st.image(image_file, use_container_width=True)
+            else:
+                st.info("🖼️ Image not available")
+
+            # Display backstory
+            backstory_file = f"{debtor_dir}/backstory.txt"
+            if os.path.exists(backstory_file):
+                with open(backstory_file, "r") as f:
+                    prompt = f.read()
+                st.markdown(prompt)
+            else:
+                st.info("📝 Backstory not available")
+
+            # Display audio player
+            audio_file_path = f"{debtor_dir}/speech.wav"
+            if os.path.exists(audio_file_path):
+                with open(audio_file_path, "rb") as audio_file:
+                    audio_bytes = audio_file.read()
+                st.audio(audio_bytes, format="audio/wav")
+
+        except Exception as e:
+            st.error(f"❌ Error loading assets for **{debtor}**: {str(e)}")
+            st.info(f"💡 Please ensure this user is properly set up in the pix2pix project in **Atenea**.")
+
+        st.divider()
