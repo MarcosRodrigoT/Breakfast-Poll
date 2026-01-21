@@ -1,6 +1,12 @@
-Alvaro: 0
-Anna: 0
-Antonio: 0
+Alvaro:
+  debt: 0
+  status: hidden
+Anna:
+  debt: 0
+  status: hidden
+Antonio:
+  debt: 0
+  status: hidden
 Carlos Cortés: 0
 Carlos Cuevas: 0
 Carlos Roberto: 0
@@ -13,11 +19,17 @@ Enmin: 0
 Enol: 0
 Esther: 0
 Fernando: 0
-Filippo: 0
+Filippo:
+  debt: 0
+  status: hidden
 Francisco: 0
-Gabin: 0
+Gabin:
+  debt: 0
+  status: hidden
 Gonzalo: 0
-Hugo: 0
+Hugo:
+  debt: 0
+  status: hidden
 Isa: 0
 Isa Fernández: 0
 Jesús: 0
@@ -28,9 +40,13 @@ Marta Goyena: 0
 Marta Orduna: 0
 Martina: 0
 Matteo: 0
-Miki: 0
+Miki:
+  debt: 0
+  status: hidden
 Narciso: 0
 Pablo: 0
 Sara: 0
 Usón: 0
-Victoria: 0
+Victoria:
+  debt: 0
+  status: hidden

@@ -39,6 +39,49 @@ def load_users(yaml_file):
     return list(data.keys())
 
 
+def load_active_users(yaml_file):
+    """Load only active users (not hidden) from the YAML file."""
+    data = load_yaml(yaml_file)
+    active_users = []
+    for user, value in data.items():
+        # Handle both old format (just a number) and new format (dict with status)
+        if isinstance(value, dict):
+            if value.get("status", "active") == "active":
+                active_users.append(user)
+        else:
+            # Old format - all users are active by default
+            active_users.append(user)
+    return active_users
+
+
+def load_hidden_users(yaml_file):
+    """Load only hidden users from the YAML file."""
+    data = load_yaml(yaml_file)
+    hidden_users = []
+    for user, value in data.items():
+        if isinstance(value, dict) and value.get("status") == "hidden":
+            hidden_users.append(user)
+    return hidden_users
+
+
+def toggle_user_status(yaml_file, user_name, new_status):
+    """Toggle a user's status between 'active' and 'hidden'."""
+    data = load_yaml(yaml_file)
+
+    if user_name not in data:
+        return False
+
+    # Convert old format to new format if needed
+    if not isinstance(data[user_name], dict):
+        data[user_name] = {"debt": data[user_name], "status": "active"}
+
+    # Update status
+    data[user_name]["status"] = new_status
+
+    save_yaml(data, yaml_file)
+    return True
+
+
 def save_users(users, users_file):
     sorted_users = sorted(users, key=lambda x: (x != "Invitado", x))
     with open(users_file, "w", encoding="utf-8") as f:
@@ -68,8 +111,8 @@ def add_user(yaml_file, new_user, new_debt, last_file):
     if new_user in data or not result:
         return False
 
-    # Add the new user to the YAML file
-    data[new_user] = 0
+    # Add the new user to the YAML file with new format
+    data[new_user] = {"debt": 0, "status": "active"}
 
     # Save the updated data back to the YAML file
     save_yaml(data, yaml_file)

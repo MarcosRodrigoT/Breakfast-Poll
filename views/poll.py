@@ -1,6 +1,6 @@
 import pandas as pd
 import streamlit as st
-from utils import save_order, add_user, load_users
+from utils import save_order, add_user, load_users, load_active_users, load_hidden_users, toggle_user_status
 
 
 def poll(order_file, users_file, last_file):
@@ -28,6 +28,46 @@ def poll(order_file, users_file, last_file):
 
         st.button("Save user", disabled=len(new_user) == 0, on_click=add_user_onclick)
 
+    # Manage hidden users
+    with st.expander("👁️ Manage Hidden Users"):
+        st.markdown("**Hide inactive users** to keep the participant list short. Hidden users can still be unhidden later.")
+
+        col1, col2 = st.columns(2)
+
+        with col1:
+            st.subheader("Active Users")
+            active_users = load_active_users(users_file)
+
+            if active_users:
+                for user in active_users:
+                    col_user, col_btn = st.columns([3, 1])
+                    with col_user:
+                        st.write(user)
+                    with col_btn:
+                        if st.button("Hide", key=f"hide_{user}"):
+                            toggle_user_status(users_file, user, "hidden")
+                            st.session_state.users = load_users(users_file)
+                            st.rerun()
+            else:
+                st.info("No active users")
+
+        with col2:
+            st.subheader("Hidden Users")
+            hidden_users = load_hidden_users(users_file)
+
+            if hidden_users:
+                for user in hidden_users:
+                    col_user, col_btn = st.columns([3, 1])
+                    with col_user:
+                        st.write(user)
+                    with col_btn:
+                        if st.button("Show", key=f"show_{user}"):
+                            toggle_user_status(users_file, user, "active")
+                            st.session_state.users = load_users(users_file)
+                            st.rerun()
+            else:
+                st.info("No hidden users")
+
     def step1_onclick():
         st.session_state.poll_state = 0
 
@@ -49,7 +89,9 @@ def poll(order_file, users_file, last_file):
 
     # Step 1: Participant
     st.header("Add participant")
-    participant = st.radio(label="Select your name:", options=st.session_state.users, on_change=step1_onclick)
+    # Load only active users for the poll view
+    active_users = load_active_users(users_file)
+    participant = st.radio(label="Select your name:", options=active_users, on_change=step1_onclick)
 
     # Select participant
     if st.button("Next", key="step1_next", disabled=st.session_state.poll_state > 0, on_click=step2_onclick):
