@@ -165,6 +165,37 @@ def statistics(history_dir, whopaid_file, order_file, bar_file, machine_file, de
         )
         st.plotly_chart(fig_user_spending, use_container_width=True)
 
+    # Participation count over time
+    st.subheader("👥 Participation Count Over Time")
+
+    # Count number of orders per day (each person counted per order)
+    daily_participation = user_item_filtered_df.groupby(user_item_filtered_df["Date"].dt.date).size().reset_index()
+    daily_participation.columns = ["Date", "Number of Orders"]
+
+    if selected_drinks or selected_foods:
+        participation_title = "Daily Orders for Selected Items"
+    elif selected_users:
+        participation_title = "Daily Orders by Selected Users"
+    else:
+        participation_title = "Daily Participation (Total Orders)"
+
+    fig_participation_time = px.bar(
+        daily_participation,
+        x="Date",
+        y="Number of Orders",
+        title=participation_title
+    )
+    fig_participation_time.update_layout(
+        xaxis_title="Date",
+        yaxis_title="Number of Orders",
+        hovermode="x unified",
+        showlegend=False
+    )
+    fig_participation_time.update_traces(marker_color='lightblue')
+    st.plotly_chart(fig_participation_time, use_container_width=True)
+
+    st.caption("💡 Each order is counted individually - if someone orders twice on the same day, they're counted twice")
+
     st.divider()
 
     # 2. Item Popularity
