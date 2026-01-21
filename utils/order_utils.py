@@ -1,6 +1,7 @@
 import os
 import pandas as pd
 import streamlit as st
+import yaml
 from collections import Counter
 
 
@@ -26,266 +27,293 @@ def save_order(current_order, order_file, combine=True):
     combined_order.to_csv(order_file, index=False)
 
 
-# Complex ticke logic
+def load_pricing_config(config_file="inputs/pricing.yaml"):
+    """Load pricing configuration from YAML file."""
+    with open(config_file, "r", encoding="utf-8") as f:
+        return yaml.safe_load(f)
+
+
+def get_item_info(item_name, config):
+    """Get price and category for an item."""
+    item = config["items"].get(item_name, {})
+    return item.get("price", 0), item.get("category", "Unknown")
+
+
+def find_combo(drink_category, food_category, config):
+    """Find matching combo for drink and food categories."""
+    for combo in config["combos"]:
+        if drink_category in combo["drink_categories"] and food_category in combo["food_categories"]:
+            return combo
+    return None
+
+
+def is_combinable_food(food_category):
+    """Check if a food category can be combined."""
+    return food_category in ["Barrita aceite", "Barrita tomate", "Napolitana", "Croissant"]
+
+
+def is_combinable_drink(drink_category):
+    """Check if a drink category can be combined."""
+    return drink_category in ["Café", "Infusión"]
+
+
+# Refactored ticket logic
 def ticket_logic(current_df):
-    # Define item prices and categories
-    item_prices = {
-        "Café con leche": (1.2, "Café"),
-        "Cortado": (1.2, "Café"),
-        "Italiano": (1.2, "Café"),
-        "Aguasusia": (1.2, "Café"),
-        "Café sin lactosa": (1.2, "Café"),
-        "Café con soja": (1.2, "Café"),
-        "Descafeinado con leche": (1.2, "Café"),
-        "Descafeinado con leche desnatada": (1.2, "Café"),
-        "Aguasusia susia": (1.2, "Café"),
-        "Té con leche": (1.2, "Café"),
-        "Colacao": (1.5, "Colacao"),
-        "Té": (0.9, "Infusión"),
-        "Manzanilla": (0.9, "Infusión"),
-        "Barrita aceite": (1.85, "Barrita aceite"),
-        "Barrita tomate": (2.5, "Barrita tomate"),
-        "Napolitana de chocolate": (1.85, "Napolitana"),
-        "Croissant plancha": (2.5, "Croissant"),
-        "Palmera chocolate": (1.5, "Palmera"),
-        "Palmera chocolate blanco": (1.5, "Palmera"),
-        "Tortilla": (1.4, "Tortilla"),
-        "Yogurt": (0.9, "Yogurt"),
-        "Nada": (0.0, "Nada"),
-    }
+    """
+    Calculate ticket breakdown with combo pricing.
+    Now uses externalized pricing configuration from pricing.yaml
+    """
+    # Load pricing configuration
+    config = load_pricing_config()
 
-    # Define possible combos:
-    combinable = [
-        "Café",
-        "Infusión",
-        "Barrita aceite",
-        "Barrita tomate",
-        "Napolitana de chocolate",
-        "Croissant plancha",
-    ]
+    # Data structures for processing
+    users = []  # (user_name, price) tuples
+    drinks_raw = []  # Original drink names for bar ticket
+    foods_raw = []  # Original food names for bar ticket
 
-    # Iterate over each user's selections
-    users = []  # Users that have answer the poll
-    drinks = []  # Drinks selected in the poll
-    foods = []  # Foods selected in the poll
-    variable_users = []  # Users whose price might change depending on combo conditions
-    drinker = []  # Users that have gotten a drink and whose price might change depending on combo conditions
-    combo_users = []  # Users that have gotten a combo option
-    infusion_drinker = []  # Users that have gotten an infusion as a drink
+    # Track users with variable pricing (for combo optimization)
+    variable_users = {}  # {user_name: price_options}
+    infusion_combo_users = []  # Users who ordered infusion + combinable food
+    food_only_users = []  # Users who only ordered combinable food
 
+    # Count items by category
+    category_counts = Counter()
+
+    # Process each user's order
     for _, row in current_df.iterrows():
-        drinks.append(row["Drinks"])
-        foods.append(row["Food"])
-
         user_name = row["Name"]
         user_drink = row["Drinks"]
         user_food = row["Food"]
 
-        # If just a drink has been selected
-        if user_drink != "Nada" and user_food == "Nada":
-            user_price = item_prices[user_drink][0]
+        drinks_raw.append(user_drink)
+        foods_raw.append(user_food)
 
-        # If both drink and food have been selected
-        elif user_drink != "Nada" and user_food != "Nada":
-            # If chosen food can be combined
-            if user_food in combinable:
-                user_food_aux = item_prices[user_food][1]  # Category to which the selected food belongs to
-                user_drink_aux = item_prices[user_drink][1]  # Category to which the selected drink belongs to
+        drink_price, drink_cat = get_item_info(user_drink, config)
+        food_price, food_cat = get_item_info(user_food, config)
 
-                # If chosen drink can be combined
-                if user_drink_aux in combinable:
-                    match user_drink_aux:
-                        # If chosen drink is a coffee
-                        case "Café":
-                            match user_food_aux:
-                                # If chosen food belongs to the cheaper breakfast combo
-                                case "Barrita aceite" | "Napolitana":
-                                    user_price = 1.85
-                                    combo_users.append((user_name, user_drink, user_food))
-                                # If chosen food belongs to the expensier breakfast combo
-                                case "Barrita tomate" | "Croissant":
-                                    user_price = 2.5
-                                    combo_users.append((user_name, user_drink, user_food))
-                        # If chosen drink is an infusion
-                        case "Infusión":
-                            match user_food_aux:
-                                # If chosen food belongs to the cheaper breakfast combo
-                                case "Barrita aceite" | "Napolitana":
-                                    user_price = (1.85, 1.55)
-                                    variable_users.append(user_name)
-                                    drinker.append(user_name)
-                                    infusion_drinker.append(user_name)
-                                    combo_users.append((user_name, user_drink, user_food))
-                                # If chosen food belongs to the expensier breakfast combo
-                                case "Barrita tomate" | "Croissant":
-                                    user_price = (2.5, 2.2)
-                                    variable_users.append(user_name)
-                                    drinker.append(user_name)
-                                    infusion_drinker.append(user_name)
-                                    combo_users.append((user_name, user_drink, user_food))
+        # Count categories (excluding "Nada")
+        if drink_cat != "Nada":
+            category_counts[drink_cat] += 1
+        if food_cat != "Nada":
+            category_counts[food_cat] += 1
 
-                # If chosen drink cannot be combined
-                else:
-                    match user_food_aux:
-                        # If chosen food belongs to the cheaper breakfast combo
-                        case "Barrita aceite" | "Napolitana":
-                            user_price = (item_prices[user_drink][0] + item_prices[user_food][0], 2.15)
-                            variable_users.append(user_name)
-                            drinker.append(user_name)
-                        # If chosen food belongs to the expensier breakfast combo
-                        case "Barrita tomate" | "Croissant":
-                            user_price = (item_prices[user_drink][0] + item_prices[user_food][0], 2.8)
-                            variable_users.append(user_name)
-                            drinker.append(user_name)
+        # Calculate user price based on their selection
+        user_price = calculate_user_price(
+            user_name, user_drink, user_food,
+            drink_price, drink_cat, food_price, food_cat,
+            config, variable_users, infusion_combo_users, food_only_users
+        )
 
-            # If chosen food cannot be combined
-            else:
-                user_price = item_prices[user_drink][0] + item_prices[user_food][0]
+        users.append((user_name, user_price))
 
-        # If just a food has been selected
+    # Optimize combo assignments and calculate final prices
+    user_debts = optimize_combo_pricing(
+        users, category_counts, variable_users,
+        infusion_combo_users, food_only_users
+    )
+
+    # Generate tickets
+    bar_ticket = generate_bar_ticket(drinks_raw, foods_raw)
+    machine_ticket = generate_machine_ticket(category_counts, config)
+    debts_ticket = generate_debts_ticket(user_debts)
+
+    return bar_ticket, machine_ticket, debts_ticket
+
+
+def calculate_user_price(user_name, drink, food, drink_price, drink_cat,
+                         food_price, food_cat, config, variable_users,
+                         infusion_combo_users, food_only_users):
+    """Calculate price for a single user's order."""
+
+    # Case 1: Only drink
+    if drink != "Nada" and food == "Nada":
+        return drink_price
+
+    # Case 2: Only food
+    if drink == "Nada" and food != "Nada":
+        if is_combinable_food(food_cat):
+            # Food can potentially be part of a combo
+            combo = find_combo("Café", food_cat, config)
+            if combo:
+                # Store multiple price options for later optimization
+                base_price = food_price
+                combo_contribution = combo["price"] - 1.20  # Coffee price
+                infusion_contribution = combo["price"] - 0.90  # Infusion price
+                variable_users[user_name] = (base_price, combo_contribution, infusion_contribution)
+                food_only_users.append(user_name)
+                return base_price  # Default to base price
+        return food_price
+
+    # Case 3: Both drink and food
+    if drink != "Nada" and food != "Nada":
+        # Try to find a combo
+        combo = find_combo(drink_cat, food_cat, config)
+
+        if combo:
+            # Perfect combo match
+            if drink_cat == "Café":
+                return combo["price"]
+            elif drink_cat == "Infusión":
+                # Infusion combos may get discount if enough coffees available
+                regular_price = combo["price"]
+                discount_price = combo.get("discount_price", regular_price)
+                variable_users[user_name] = (regular_price, discount_price)
+                infusion_combo_users.append(user_name)
+                return regular_price  # Default to regular price
         else:
-            # If chosen food can be combined
-            if user_food in combinable:
-                user_food_aux = item_prices[user_food][1]
-                match user_food_aux:
-                    # If chosen food belongs to the cheaper breakfast combo
-                    case "Barrita aceite" | "Napolitana":
-                        user_price = (item_prices[user_food][0], 0.65, 0.95)
-                        variable_users.append(user_name)
-                    # If chosen food belongs to the expensier breakfast combo
-                    case "Barrita tomate" | "Croissant":
-                        user_price = (item_prices[user_food][0], 1.3, 1.6)
-                        variable_users.append(user_name)
+            # Check if food is combinable but drink isn't
+            if is_combinable_food(food_cat) and not is_combinable_drink(drink_cat):
+                # Non-combinable drink + combinable food
+                # Could potentially use the food in someone else's combo
+                base_price = drink_price + food_price
+                combo_coffee = find_combo("Café", food_cat, config)
+                if combo_coffee:
+                    combo_contribution = combo_coffee["price"]
+                    variable_users[user_name] = (base_price, combo_contribution)
+                    food_only_users.append(user_name)
+                return base_price
 
-            # If chosen food cannot be combined
-            else:
-                user_price = item_prices[user_food][0]
+            # No combo possible
+            return drink_price + food_price
 
-        user_total = (user_name, user_price)
-        users.append(user_total)
+    # Case 4: Nothing ordered
+    return 0.0
 
-    # Count items that have to be asked at the bar
-    sorted_drinks = sorted(drinks)
-    sorted_foods = sorted(foods)
-    bar_items = sorted_drinks + sorted_foods
-    # st.write(f"Items: {bar_items}")
-    bar_count = Counter(bar_items)
-    bar_count_dict = dict(bar_count)
 
-    # Simplify items
-    drinks = [item_prices[x][1] for x in drinks]
-    foods = [item_prices[x][1] for x in foods]
+def optimize_combo_pricing(users, category_counts, variable_users,
+                           infusion_combo_users, food_only_users):
+    """Optimize combo assignments to minimize total cost."""
 
-    # Count items
-    item_count = {
-        "Café": len([x for x in drinks if x == "Café"]),
-        "Colacao": len([x for x in drinks if x == "Colacao"]),
-        "Infusión": len([x for x in drinks if x == "Infusión"]),
-        "Barrita aceite": len([x for x in foods if x == "Barrita aceite"]),
-        "Barrita tomate": len([x for x in foods if x == "Barrita tomate"]),
-        "Napolitana": len([x for x in foods if x == "Napolitana"]),
-        "Croissant": len([x for x in foods if x == "Croissant"]),
-        "Palmera": len([x for x in foods if x == "Palmera"]),
-        "Tortilla": len([x for x in foods if x == "Tortilla"]),
-        "Yogurt": len([x for x in foods if x == "Yogurt"]),
-    }
+    user_debts = {}
 
-    # Make associations
-    item_association = {}
-    user_association = {}
-    # Number of combinable food items
-    food_count = item_count["Barrita aceite"] + item_count["Barrita tomate"] + item_count["Napolitana"] + item_count["Croissant"]
-    # Number of combinable drinks
-    combinable_drinks = item_count["Café"] + item_count["Infusión"]
-    # If there is at least the same amount of coffes as combinable food items
-    if item_count["Café"] >= food_count:
-        # The new number of coffes is recounted, and the number of each combinable food is converted into the apropriate breakfast combo
-        item_association["Café"] = item_count["Café"] - food_count
-        item_association["Desayuno + Café (tomate)"] = item_count["Barrita tomate"]
-        item_association["Desayuno + Café (aceite)"] = item_count["Barrita aceite"]
-        item_association["Desayuno + Café (napolitana)"] = item_count["Napolitana"]
-        item_association["Desayuno + Café (croissant)"] = item_count["Croissant"]
-        item_association["Infusión"] = item_count["Infusión"]
+    # Count combinable items
+    combinable_foods = (
+        category_counts.get("Barrita aceite", 0) +
+        category_counts.get("Barrita tomate", 0) +
+        category_counts.get("Napolitana", 0) +
+        category_counts.get("Croissant", 0)
+    )
+    coffee_count = category_counts.get("Café", 0)
+    infusion_count = category_counts.get("Infusión", 0)
+    combinable_drinks = coffee_count + infusion_count
 
-        # The price that each user has to pay is computed
-        for user in users:
-            user_name = user[0]
-            user_price = user[1]
+    # Scenario 1: Enough coffees for all combinable foods
+    if coffee_count >= combinable_foods:
+        for user_name, price in users:
             if user_name in variable_users:
-                user_price = user_price[1]
+                # Use the optimized price (index 1)
+                user_debts[user_name] = variable_users[user_name][1]
+            else:
+                user_debts[user_name] = price
 
-            user_association[user_name] = user_price if user_name not in user_association else user_price + user_association[user_name]
+    # Scenario 2: Need to use infusions for some combos
+    elif combinable_drinks >= combinable_foods:
+        tea_combos = combinable_foods - coffee_count
+        tea_savings = tea_combos * 0.30  # 0.30€ saved per tea combo (0.90 instead of 1.20)
 
-    # If there is at least the same amount of coffes&teas as combinable food items
-    elif combinable_drinks >= food_count:
-        original_tea_count = item_count["Infusión"]
-        # The new number of coffes is set to 0, and the number of each combinable food is converted into the apropriate breakfast combo
-        item_association["Café"] = 0
-        item_association["Desayuno + Café (tomate)"] = item_count["Barrita tomate"]
-        item_association["Desayuno + Café (aceite)"] = item_count["Barrita aceite"]
-        item_association["Desayuno + Café (napolitana)"] = item_count["Napolitana"]
-        item_association["Desayuno + Café (croissant)"] = item_count["Croissant"]
-
-        df_diff = combinable_drinks - food_count
-        not_drinkers = len(variable_users) - len(drinker)
-
-        # The new number of teas is computed
-        if df_diff == 0:
-            item_association["Infusión"] = 0
+        # Distribute savings
+        if len(infusion_combo_users) > 0:
+            # Distribute among infusion users
+            savings_per_user = tea_savings / len(infusion_combo_users)
+            for user_name, price in users:
+                if user_name in infusion_combo_users and user_name in variable_users:
+                    discount_price = variable_users[user_name][1]
+                    user_debts[user_name] = discount_price + savings_per_user
+                elif user_name in variable_users:
+                    user_debts[user_name] = variable_users[user_name][1]
+                else:
+                    user_debts[user_name] = price
         else:
-            food_left = food_count - item_count["Café"]
-            item_association["Infusión"] = item_count["Infusión"] - food_left
+            # Distribute among food-only users
+            if len(food_only_users) > 0:
+                savings_per_user = tea_savings / len(food_only_users)
+                for user_name, price in users:
+                    if user_name in food_only_users and user_name in variable_users:
+                        user_debts[user_name] = variable_users[user_name][1] + savings_per_user
+                    elif user_name in variable_users:
+                        user_debts[user_name] = variable_users[user_name][1]
+                    else:
+                        user_debts[user_name] = price
+            else:
+                # Distribute among all variable users
+                if len(variable_users) > 0:
+                    savings_per_user = tea_savings / len(variable_users)
+                    for user_name, price in users:
+                        if user_name in variable_users:
+                            user_debts[user_name] = variable_users[user_name][1] + savings_per_user
+                        else:
+                            user_debts[user_name] = price
+                else:
+                    for user_name, price in users:
+                        user_debts[user_name] = price
 
-        # Number of combos that have been made with an infusion
-        tea_combos = original_tea_count - item_association["Infusión"]
-
-        # The price that each user has to pay is computed
-        for user in users:
-            user_name = user[0]
-            user_price = user[1]
-            if not_drinkers > 0 and not_drinkers > tea_combos:
-                if user_name in variable_users and user_name in drinker:
-                    user_price = user_price[1]
-                elif user_name in variable_users and user_name not in drinker:
-                    user_price = user_price[1] + ((0.3 * tea_combos) / not_drinkers)
-            elif not_drinkers == 0:
-                if user_name in variable_users and user_name in infusion_drinker:
-                    user_price = user_price[1] + ((0.3 * tea_combos) / len(infusion_drinker))
-                elif user_name in variable_users and user_name not in infusion_drinker:
-                    user_price = user_price[1]
-            elif not_drinkers > 0 and not_drinkers < tea_combos:
-                user_price = user_price[1] + ((0.3 * tea_combos) / len(variable_users))
-
-            user_association[user_name] = user_price if user_name not in user_association else user_price + user_association[user_name]
+    # Scenario 3: Not enough drinks for combos (edge case)
     else:
         st.write("This use case is out of scope. Good luck figuring this ticket out for yourselves. 😊")
         st.write("[Click here for emotional support](https://goatse.ru/)")
+        # Default to base prices
+        for user_name, price in users:
+            user_debts[user_name] = price
 
-    item_association["Colacao"] = item_count["Colacao"]
-    item_association["Yogurt"] = item_count["Yogurt"]
-    item_association["Tortilla"] = item_count["Tortilla"]
-    item_association["Palmera"] = item_count["Palmera"]
+    return user_debts
 
-    # Create a DataFrame to display the ticket
-    bar_selection = pd.DataFrame.from_dict(bar_count_dict, orient="index", columns=["Amount"])
-    ticket_df = pd.DataFrame.from_dict(item_association, orient="index", columns=["Amount"])
-    debts_ticket = pd.DataFrame.from_dict(user_association, orient="index", columns=["Debt"])
 
-    # Format prices to show only 2 decimals
-    debts_ticket["Debt"] = debts_ticket["Debt"].apply(lambda x: f"{x:.2f}")
+def generate_bar_ticket(drinks, foods):
+    """Generate bar ticket showing what to order at cafeteria."""
+    items = [item for item in drinks + foods if item != "Nada"]
+    item_counts = Counter(items)
 
-    # Change indexes
-    bar_selection = bar_selection.reset_index()
-    ticket_df = ticket_df.reset_index()
-    debts_ticket = debts_ticket.reset_index()
+    df = pd.DataFrame(list(item_counts.items()), columns=["Item", "Amount"])
+    return df.sort_values("Item").reset_index(drop=True)
 
-    # Rename the columns for clarity
-    bar_selection.columns = ["Item", "Amount"]
-    ticket_df.columns = ["Item", "Amount"]
-    debts_ticket.columns = ["Name", "Debt"]
 
-    # Filter rows to exclude zero amounts
-    filtered_bar = bar_selection[bar_selection["Item"] != "Nada"]
-    filtered_machine = ticket_df[ticket_df["Amount"] > 0]
+def generate_machine_ticket(category_counts, config):
+    """Generate machine ticket showing optimized items for payment."""
+    machine_items = {}
 
-    return filtered_bar, filtered_machine, debts_ticket
+    # Calculate combo items
+    combinable_foods = (
+        category_counts.get("Barrita aceite", 0) +
+        category_counts.get("Barrita tomate", 0) +
+        category_counts.get("Napolitana", 0) +
+        category_counts.get("Croissant", 0)
+    )
+    coffee_count = category_counts.get("Café", 0)
+    combinable_drinks = coffee_count + category_counts.get("Infusión", 0)
+
+    if coffee_count >= combinable_foods:
+        # All foods become combos
+        machine_items["Café"] = coffee_count - combinable_foods
+        machine_items["Infusión"] = category_counts.get("Infusión", 0)
+    elif combinable_drinks >= combinable_foods:
+        # Use all drinks for combos
+        machine_items["Café"] = 0
+        foods_left = combinable_foods - coffee_count
+        machine_items["Infusión"] = category_counts.get("Infusión", 0) - foods_left
+
+    # Add combo items using machine display names
+    display = config.get("machine_display", {})
+    for food_cat in ["Barrita aceite", "Barrita tomate", "Napolitana", "Croissant"]:
+        count = category_counts.get(food_cat, 0)
+        if count > 0:
+            display_name = display.get(food_cat, f"Desayuno + Café ({food_cat.lower()})")
+            machine_items[display_name] = count
+
+    # Add non-combinable items
+    for cat in ["Colacao", "Palmera", "Tortilla", "Yogurt"]:
+        count = category_counts.get(cat, 0)
+        if count > 0:
+            machine_items[cat] = count
+
+    # Filter out zero amounts
+    machine_items = {k: v for k, v in machine_items.items() if v > 0}
+
+    df = pd.DataFrame(list(machine_items.items()), columns=["Item", "Amount"])
+    return df.reset_index(drop=True)
+
+
+def generate_debts_ticket(user_debts):
+    """Generate debts ticket showing cost per person."""
+    df = pd.DataFrame(list(user_debts.items()), columns=["Name", "Debt"])
+    df["Debt"] = df["Debt"].apply(lambda x: f"{x:.2f}")
+    return df.reset_index(drop=True)

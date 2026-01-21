@@ -1,0 +1,111 @@
+# Pricing configuration for Breakfast-Poll
+# Update this file when prices or combo rules change
+
+# Item prices and categories
+items:
+  # Drinks - Coffee types
+  "Café con leche":
+    price: 1.20
+    category: "Café"
+  "Cortado":
+    price: 1.20
+    category: "Café"
+  "Italiano":
+    price: 1.20
+    category: "Café"
+  "Aguasusia":
+    price: 1.20
+    category: "Café"
+  "Café sin lactosa":
+    price: 1.20
+    category: "Café"
+  "Café con soja":
+    price: 1.20
+    category: "Café"
+  "Descafeinado con leche":
+    price: 1.20
+    category: "Café"
+  "Descafeinado con leche desnatada":
+    price: 1.20
+    category: "Café"
+  "Aguasusia susia":
+    price: 1.20
+    category: "Café"
+  "Té con leche":
+    price: 1.20
+    category: "Café"
+
+  # Drinks - Other
+  "Colacao":
+    price: 1.50
+    category: "Colacao"
+  "Té":
+    price: 0.90
+    category: "Infusión"
+  "Manzanilla":
+    price: 0.90
+    category: "Infusión"
+
+  # Food items
+  "Barrita aceite":
+    price: 1.85
+    category: "Barrita aceite"
+  "Barrita tomate":
+    price: 2.50
+    category: "Barrita tomate"
+  "Napolitana de chocolate":
+    price: 1.85
+    category: "Napolitana"
+  "Croissant plancha":
+    price: 2.50
+    category: "Croissant"
+  "Palmera chocolate":
+    price: 1.50
+    category: "Palmera"
+  "Palmera chocolate blanco":
+    price: 1.50
+    category: "Palmera"
+  "Tortilla":
+    price: 1.40
+    category: "Tortilla"
+  "Yogurt":
+    price: 0.90
+    category: "Yogurt"
+  "Nada":
+    price: 0.00
+    category: "Nada"
+
+# Combo definitions
+combos:
+  # Cheaper breakfast combo (1.85€)
+  - name: "Desayuno + Café (aceite/napolitana)"
+    price: 1.85
+    drink_categories: ["Café"]
+    food_categories: ["Barrita aceite", "Napolitana"]
+
+  # More expensive breakfast combo (2.50€)
+  - name: "Desayuno + Café (tomate/croissant)"
+    price: 2.50
+    drink_categories: ["Café"]
+    food_categories: ["Barrita tomate", "Croissant"]
+
+  # Infusion combos (cheaper)
+  - name: "Desayuno + Infusión (aceite/napolitana)"
+    price: 1.85
+    discount_price: 1.55  # When using tea discount
+    drink_categories: ["Infusión"]
+    food_categories: ["Barrita aceite", "Napolitana"]
+
+  # Infusion combos (more expensive)
+  - name: "Desayuno + Infusión (tomate/croissant)"
+    price: 2.50
+    discount_price: 2.20  # When using tea discount
+    drink_categories: ["Infusión"]
+    food_categories: ["Barrita tomate", "Croissant"]
+
+# Machine ticket display names for combos
+machine_display:
+  "Barrita aceite": "Desayuno + Café (aceite)"
+  "Napolitana": "Desayuno + Café (napolitana)"
+  "Barrita tomate": "Desayuno + Café (tomate)"
+  "Croissant": "Desayuno + Café (croissant)"
