@@ -51,7 +51,7 @@ A Streamlit-based coffee and breakfast ordering system for GTI (Grupo de Tratami
 
 ### Morosos (Hall of Shame)
 - Displays all team members ranked by debt
-- Shows AI-generated content from [pix2pix](../pix2pix):
+- Shows AI-generated content from [pix2pix](https://github.com/MarcosRodrigoT/pix2pix):
   - Funny AI-generated images (Stable Diffusion 3.5)
   - Fictional "evil debtor" backstories
   - Villain nicknames
