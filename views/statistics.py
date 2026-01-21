@@ -183,6 +183,9 @@ def statistics(history_dir, whopaid_file, order_file, bar_file, machine_file, de
     user_participation = filtered_df["Name"].value_counts().reset_index()
     user_participation.columns = ["Name", "Orders"]
 
+    # Calculate height based on number of users (30px per user, minimum 400px)
+    participation_height = max(400, len(user_participation) * 30)
+
     fig_participation = px.bar(
         user_participation,
         x="Orders",
@@ -192,7 +195,10 @@ def statistics(history_dir, whopaid_file, order_file, bar_file, machine_file, de
         color="Orders",
         color_continuous_scale="Purples"
     )
-    fig_participation.update_layout(yaxis={'categoryorder': 'total ascending'})
+    fig_participation.update_layout(
+        yaxis={'categoryorder': 'total ascending'},
+        height=participation_height
+    )
     st.plotly_chart(fig_participation, use_container_width=True)
 
     st.divider()
@@ -213,6 +219,9 @@ def statistics(history_dir, whopaid_file, order_file, bar_file, machine_file, de
         payment_freq = payment_records["WhoPaid"].value_counts().reset_index()
         payment_freq.columns = ["Name", "Times Paid"]
 
+        # Calculate height based on number of payers (30px per person, minimum 400px)
+        freq_height = max(400, len(payment_freq) * 30)
+
         fig_freq = px.bar(
             payment_freq,
             x="Times Paid",
@@ -222,7 +231,10 @@ def statistics(history_dir, whopaid_file, order_file, bar_file, machine_file, de
             color="Times Paid",
             color_continuous_scale="Reds"
         )
-        fig_freq.update_layout(yaxis={'categoryorder': 'total ascending'})
+        fig_freq.update_layout(
+            yaxis={'categoryorder': 'total ascending'},
+            height=freq_height
+        )
         st.plotly_chart(fig_freq, use_container_width=True)
 
     with col2:
@@ -230,6 +242,9 @@ def statistics(history_dir, whopaid_file, order_file, bar_file, machine_file, de
         payment_total = payment_records.groupby("WhoPaid")["TotalPaid"].sum().reset_index()
         payment_total.columns = ["Name", "Total Paid"]
         payment_total = payment_total.sort_values("Total Paid", ascending=True)
+
+        # Calculate height based on number of payers (30px per person, minimum 400px)
+        total_height = max(400, len(payment_total) * 30)
 
         fig_total = px.bar(
             payment_total,
@@ -240,7 +255,10 @@ def statistics(history_dir, whopaid_file, order_file, bar_file, machine_file, de
             color="Total Paid",
             color_continuous_scale="Oranges"
         )
-        fig_total.update_layout(yaxis={'categoryorder': 'total ascending'})
+        fig_total.update_layout(
+            yaxis={'categoryorder': 'total ascending'},
+            height=total_height
+        )
         st.plotly_chart(fig_total, use_container_width=True)
 
     # Top Payers Podium
