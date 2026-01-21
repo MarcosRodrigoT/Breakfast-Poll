@@ -76,36 +76,56 @@ def statistics(history_dir, whopaid_file, order_file, bar_file, machine_file, de
         with col2b:
             selected_foods = st.multiselect("Filter by Foods", all_foods, default=None, placeholder="All foods")
 
-    # Apply filters
-    filtered_df = df.copy()
-    filtered_df = filtered_df[(filtered_df["Date"].dt.date >= start_date) & (filtered_df["Date"].dt.date <= end_date)]
+    # Apply date filter to everything
+    date_filtered_df = df[(df["Date"].dt.date >= start_date) & (df["Date"].dt.date <= end_date)].copy()
 
+    # Apply user and item filters separately for context-aware filtering
+    user_item_filtered_df = date_filtered_df.copy()
     if selected_users:
-        filtered_df = filtered_df[filtered_df["Name"].isin(selected_users)]
+        user_item_filtered_df = user_item_filtered_df[user_item_filtered_df["Name"].isin(selected_users)]
     if selected_drinks:
-        filtered_df = filtered_df[filtered_df["Drinks"].isin(selected_drinks)]
+        user_item_filtered_df = user_item_filtered_df[user_item_filtered_df["Drinks"].isin(selected_drinks)]
     if selected_foods:
-        filtered_df = filtered_df[filtered_df["Food"].isin(selected_foods)]
+        user_item_filtered_df = user_item_filtered_df[user_item_filtered_df["Food"].isin(selected_foods)]
 
-    if filtered_df.empty:
+    if user_item_filtered_df.empty:
         st.warning("No data matches the selected filters.")
         return
+
+    # Build filter description for clarity
+    filter_desc = []
+    if selected_users:
+        filter_desc.append(f"Users: {', '.join(selected_users)}")
+    if selected_drinks:
+        filter_desc.append(f"Drinks: {', '.join(selected_drinks)}")
+    if selected_foods:
+        filter_desc.append(f"Foods: {', '.join(selected_foods)}")
+
+    if filter_desc:
+        st.info("📌 Filtering by: " + " | ".join(filter_desc))
 
     st.divider()
 
     # 1. Spending Over Time
     st.header("💸 Spending Over Time")
 
-    # Group by date and calculate daily totals
-    daily_spending = filtered_df.groupby(filtered_df["Date"].dt.date)["Debt"].sum().reset_index()
-    daily_spending.columns = ["Date", "Total Spent"]
+    if selected_drinks or selected_foods:
+        # Show spending on filtered items
+        daily_spending = user_item_filtered_df.groupby(user_item_filtered_df["Date"].dt.date)["Debt"].sum().reset_index()
+        daily_spending.columns = ["Date", "Total Spent"]
+        title = "Daily Spending on Selected Items"
+    else:
+        # Show total or user-specific spending
+        daily_spending = user_item_filtered_df.groupby(user_item_filtered_df["Date"].dt.date)["Debt"].sum().reset_index()
+        daily_spending.columns = ["Date", "Total Spent"]
+        title = "Daily Total Spending" if not selected_users else f"Daily Spending by Selected Users"
 
     fig_spending = px.line(
         daily_spending,
         x="Date",
         y="Total Spent",
         markers=True,
-        title="Daily Total Spending"
+        title=title
     )
     fig_spending.update_layout(
         xaxis_title="Date",
@@ -114,9 +134,9 @@ def statistics(history_dir, whopaid_file, order_file, bar_file, machine_file, de
     )
     st.plotly_chart(fig_spending, use_container_width=True)
 
-    # If specific users selected, show individual spending
+    # If specific users selected (and not too many), show individual spending
     if selected_users and len(selected_users) <= 5:
-        user_daily_spending = filtered_df.groupby([filtered_df["Date"].dt.date, "Name"])["Debt"].sum().reset_index()
+        user_daily_spending = user_item_filtered_df.groupby([user_item_filtered_df["Date"].dt.date, "Name"])["Debt"].sum().reset_index()
         user_daily_spending.columns = ["Date", "Name", "Total Spent"]
 
         fig_user_spending = px.line(
@@ -143,44 +163,64 @@ def statistics(history_dir, whopaid_file, order_file, bar_file, machine_file, de
 
     with col1:
         st.subheader("Most Popular Drinks")
-        drinks_count = filtered_df[filtered_df["Drinks"] != "Nada"]["Drinks"].value_counts().reset_index()
-        drinks_count.columns = ["Drink", "Count"]
+        drinks_data = user_item_filtered_df[user_item_filtered_df["Drinks"] != "Nada"]
 
-        fig_drinks = px.bar(
-            drinks_count,
-            x="Count",
-            y="Drink",
-            orientation="h",
-            title="Drink Popularity",
-            color="Count",
-            color_continuous_scale="Blues"
-        )
-        fig_drinks.update_layout(yaxis={'categoryorder': 'total ascending'})
-        st.plotly_chart(fig_drinks, use_container_width=True)
+        if not drinks_data.empty:
+            drinks_count = drinks_data["Drinks"].value_counts().reset_index()
+            drinks_count.columns = ["Drink", "Count"]
+
+            fig_drinks = px.bar(
+                drinks_count,
+                x="Count",
+                y="Drink",
+                orientation="h",
+                title="Drink Popularity",
+                color="Count",
+                color_continuous_scale="Blues"
+            )
+            fig_drinks.update_layout(yaxis={'categoryorder': 'total ascending'})
+            st.plotly_chart(fig_drinks, use_container_width=True)
+        else:
+            st.info("No drink data for selected filters")
 
     with col2:
         st.subheader("Most Popular Foods")
-        foods_count = filtered_df[filtered_df["Food"] != "Nada"]["Food"].value_counts().reset_index()
-        foods_count.columns = ["Food", "Count"]
+        foods_data = user_item_filtered_df[user_item_filtered_df["Food"] != "Nada"]
 
-        fig_foods = px.bar(
-            foods_count,
-            x="Count",
-            y="Food",
-            orientation="h",
-            title="Food Popularity",
-            color="Count",
-            color_continuous_scale="Greens"
-        )
-        fig_foods.update_layout(yaxis={'categoryorder': 'total ascending'})
-        st.plotly_chart(fig_foods, use_container_width=True)
+        if not foods_data.empty:
+            foods_count = foods_data["Food"].value_counts().reset_index()
+            foods_count.columns = ["Food", "Count"]
+
+            fig_foods = px.bar(
+                foods_count,
+                x="Count",
+                y="Food",
+                orientation="h",
+                title="Food Popularity",
+                color="Count",
+                color_continuous_scale="Greens"
+            )
+            fig_foods.update_layout(yaxis={'categoryorder': 'total ascending'})
+            st.plotly_chart(fig_foods, use_container_width=True)
+        else:
+            st.info("No food data for selected filters")
 
     st.divider()
 
     # 3. User Activity
     st.header("👥 User Activity")
 
-    user_participation = filtered_df["Name"].value_counts().reset_index()
+    if selected_drinks or selected_foods:
+        # Show which users ordered the selected items
+        activity_title = "Who Orders Selected Items Most"
+    elif selected_users:
+        # Show selected users' activity
+        activity_title = "Selected Users' Participation"
+    else:
+        # Show all users' activity
+        activity_title = "Overall Participation Frequency"
+
+    user_participation = user_item_filtered_df["Name"].value_counts().reset_index()
     user_participation.columns = ["Name", "Orders"]
 
     # Calculate height based on number of users (30px per user, minimum 400px)
@@ -191,7 +231,7 @@ def statistics(history_dir, whopaid_file, order_file, bar_file, machine_file, de
         x="Orders",
         y="Name",
         orientation="h",
-        title="Participation Frequency",
+        title=activity_title,
         color="Orders",
         color_continuous_scale="Purples"
     )
@@ -203,11 +243,14 @@ def statistics(history_dir, whopaid_file, order_file, bar_file, machine_file, de
 
     st.divider()
 
-    # 4. Who Pays Statistics
+    # 4. Who Pays Statistics (GLOBAL - only affected by date filter)
     st.header("💰 Who Pays")
 
-    # Get unique payment records
-    payment_records = filtered_df.groupby("Date").agg({
+    if selected_users or selected_drinks or selected_foods:
+        st.info("ℹ️ Payment statistics show global data (not affected by user/item filters)")
+
+    # Get unique payment records from date-filtered data only
+    payment_records = date_filtered_df.groupby(date_filtered_df["Date"].dt.date).agg({
         "WhoPaid": "first",
         "TotalPaid": "first"
     }).reset_index()
@@ -277,18 +320,32 @@ def statistics(history_dir, whopaid_file, order_file, bar_file, machine_file, de
 
     st.divider()
 
-    # 5. Debt Evolution Over Time
+    # 5. Debt Evolution Over Time (only affected by user filter + date)
     st.header("📈 Debt Evolution")
 
-    # Calculate cumulative debt over time for each user
+    # For debt evolution, use date filter + optional user filter (ignore item filter)
+    debt_base_df = date_filtered_df.copy()
+
+    if selected_users:
+        # Show only selected users' debt evolution
+        debt_df = debt_base_df[debt_base_df["Name"].isin(selected_users)]
+        users_to_show = selected_users
+        st.info("ℹ️ Showing debt evolution for selected users across all their orders")
+    else:
+        # Show top 10 most active users
+        debt_df = debt_base_df
+        top_users = debt_df["Name"].value_counts().head(10).index.tolist()
+        users_to_show = top_users
+        st.info("ℹ️ Showing debt evolution for top 10 most active users")
+
+    if selected_drinks or selected_foods:
+        st.info("ℹ️ Note: Debt evolution is not affected by drink/food filters")
+
     # Sort by date
-    debt_df = filtered_df.sort_values("Date")
+    debt_df = debt_df.sort_values("Date")
 
     # For each unique date, calculate the debt snapshot
     unique_dates = sorted(debt_df["Date"].unique())
-
-    # Get all users who appear in filtered data
-    users_in_data = debt_df["Name"].unique()
 
     # Build debt evolution
     debt_evolution = []
@@ -298,27 +355,19 @@ def statistics(history_dir, whopaid_file, order_file, bar_file, machine_file, de
         # Get debts for this date
         debts_snapshot = date_data.groupby("Name")["Debt"].sum().to_dict()
 
-        for user in users_in_data:
-            debt_evolution.append({
-                "Date": date.date(),
-                "Name": user,
-                "Debt": debts_snapshot.get(user, 0)
-            })
+        for user in users_to_show:
+            if user in debts_snapshot:
+                debt_evolution.append({
+                    "Date": date.date(),
+                    "Name": user,
+                    "Debt": debts_snapshot[user]
+                })
 
     debt_evolution_df = pd.DataFrame(debt_evolution)
 
-    # Show all users or filtered users
-    users_to_show = selected_users if selected_users else users_in_data[:10]  # Limit to 10 for readability
-
-    if len(users_to_show) > 10:
-        st.warning("Too many users selected. Showing first 10 users for clarity.")
-        users_to_show = users_to_show[:10]
-
-    debt_evolution_filtered = debt_evolution_df[debt_evolution_df["Name"].isin(users_to_show)]
-
-    if not debt_evolution_filtered.empty:
+    if not debt_evolution_df.empty:
         fig_debt_evolution = px.line(
-            debt_evolution_filtered,
+            debt_evolution_df,
             x="Date",
             y="Debt",
             color="Name",
@@ -331,6 +380,8 @@ def statistics(history_dir, whopaid_file, order_file, bar_file, machine_file, de
             hovermode="x unified"
         )
         st.plotly_chart(fig_debt_evolution, use_container_width=True)
+    else:
+        st.info("No debt evolution data available for selected criteria")
 
     # Summary Statistics
     st.divider()
@@ -339,18 +390,21 @@ def statistics(history_dir, whopaid_file, order_file, bar_file, machine_file, de
     col1, col2, col3, col4 = st.columns(4)
 
     with col1:
-        unique_days = filtered_df["Date"].dt.date.nunique()
+        unique_days = user_item_filtered_df["Date"].dt.date.nunique()
         st.metric("Breakfast Sessions", unique_days)
 
     with col2:
-        total_orders = len(filtered_df)
+        total_orders = len(user_item_filtered_df)
         st.metric("Individual Orders", total_orders)
 
     with col3:
-        total_spent = filtered_df["Debt"].sum()
+        total_spent = user_item_filtered_df["Debt"].sum()
         st.metric("Total Spent", f"{total_spent:.2f} €")
 
     with col4:
         # Calculate average total per session
-        avg_per_session = filtered_df.groupby(filtered_df["Date"].dt.date)["Debt"].sum().mean()
-        st.metric("Avg per Session", f"{avg_per_session:.2f} €")
+        if unique_days > 0:
+            avg_per_session = user_item_filtered_df.groupby(user_item_filtered_df["Date"].dt.date)["Debt"].sum().mean()
+            st.metric("Avg per Session", f"{avg_per_session:.2f} €")
+        else:
+            st.metric("Avg per Session", "N/A")
