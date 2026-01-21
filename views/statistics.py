@@ -131,8 +131,14 @@ def statistics(history_dir, whopaid_file, order_file, bar_file, machine_file, de
         daily_spending.columns = ["Date", "Total Spent"]
         title = "Daily Total Spending" if not selected_users else f"Daily Spending by Selected Users"
 
+    # Fill in missing dates with 0 spending
+    all_dates = pd.date_range(start=start_date, end=end_date, freq='D').date
+    daily_spending_complete = pd.DataFrame({"Date": all_dates})
+    daily_spending_complete = daily_spending_complete.merge(daily_spending, on="Date", how="left")
+    daily_spending_complete["Total Spent"] = daily_spending_complete["Total Spent"].fillna(0)
+
     fig_spending = px.line(
-        daily_spending,
+        daily_spending_complete,
         x="Date",
         y="Total Spent",
         markers=True,
@@ -157,8 +163,23 @@ def statistics(history_dir, whopaid_file, order_file, bar_file, machine_file, de
         user_daily_spending = user_item_filtered_df.groupby([user_item_filtered_df["Date"].dt.date, "Name"])["Debt"].sum().reset_index()
         user_daily_spending.columns = ["Date", "Name", "Total Spent"]
 
+        # Fill in missing dates with 0 spending for each user
+        all_dates = pd.date_range(start=start_date, end=end_date, freq='D').date
+        users_in_data = user_daily_spending["Name"].unique()
+
+        # Create complete date range for each user
+        complete_data = []
+        for user in users_in_data:
+            user_data = user_daily_spending[user_daily_spending["Name"] == user].copy()
+            complete_dates = pd.DataFrame({"Date": all_dates, "Name": user})
+            complete_user_data = complete_dates.merge(user_data, on=["Date", "Name"], how="left")
+            complete_user_data["Total Spent"] = complete_user_data["Total Spent"].fillna(0)
+            complete_data.append(complete_user_data)
+
+        user_daily_spending_complete = pd.concat(complete_data, ignore_index=True)
+
         fig_user_spending = px.line(
-            user_daily_spending,
+            user_daily_spending_complete,
             x="Date",
             y="Total Spent",
             color="Name",
