@@ -14,6 +14,8 @@ def load_statistics_data(history_dir, whopaid_file, order_file, bar_file, machin
 
     # Process data into structured format
     processed_data = []
+    accumulated_debts = []
+
     for record in history:
         date_str = record["Date"]
         date_obj = datetime.strptime(date_str, "%Y-%m-%d_%H-%M-%S")
@@ -33,7 +35,15 @@ def load_statistics_data(history_dir, whopaid_file, order_file, bar_file, machin
                 "TotalPaid": whopaid_price
             })
 
-    return pd.DataFrame(processed_data)
+        # Process accumulated debts from the Debts dataframe
+        for _, debt_row in record["Debts"].iterrows():
+            accumulated_debts.append({
+                "Date": date_obj,
+                "Name": debt_row["Name"],
+                "AccumulatedDebt": float(debt_row["Debt"])
+            })
+
+    return pd.DataFrame(processed_data), pd.DataFrame(accumulated_debts)
 
 
 def statistics(history_dir, whopaid_file, order_file, bar_file, machine_file, debts_file, users_file):
@@ -45,9 +55,10 @@ def statistics(history_dir, whopaid_file, order_file, bar_file, machine_file, de
 
     # Load all historical data
     if "stats_data" not in st.session_state:
-        st.session_state.stats_data = load_statistics_data(history_dir, whopaid_file, order_file, bar_file, machine_file, debts_file)
+        st.session_state.stats_data, st.session_state.accumulated_debts = load_statistics_data(history_dir, whopaid_file, order_file, bar_file, machine_file, debts_file)
 
     df = st.session_state.stats_data
+    accumulated_debts_df = st.session_state.accumulated_debts
 
     if df.empty:
         st.warning("No historical data available for statistics.")
@@ -320,66 +331,56 @@ def statistics(history_dir, whopaid_file, order_file, bar_file, machine_file, de
 
     st.divider()
 
-    # 5. Debt Evolution Over Time (only affected by user filter + date)
-    st.header("📈 Debt Evolution")
+    # 5. Accumulated Debt Evolution Over Time (only affected by user filter + date)
+    st.header("📈 Accumulated Debt Evolution")
 
-    # For debt evolution, use date filter + optional user filter (ignore item filter)
-    debt_base_df = date_filtered_df.copy()
+    # Filter accumulated debts by date range
+    debt_evolution_df = accumulated_debts_df[
+        (accumulated_debts_df["Date"].dt.date >= start_date) &
+        (accumulated_debts_df["Date"].dt.date <= end_date)
+    ].copy()
 
     if selected_users:
         # Show only selected users' debt evolution
-        debt_df = debt_base_df[debt_base_df["Name"].isin(selected_users)]
         users_to_show = selected_users
-        st.info("ℹ️ Showing debt evolution for selected users across all their orders")
+        st.info("ℹ️ Showing accumulated debt balance for selected users over time")
     else:
-        # Show top 10 most active users
-        debt_df = debt_base_df
-        top_users = debt_df["Name"].value_counts().head(10).index.tolist()
+        # Show top 10 most active users from the filtered date range
+        top_users = debt_evolution_df.groupby("Name")["AccumulatedDebt"].count().nlargest(10).index.tolist()
         users_to_show = top_users
-        st.info("ℹ️ Showing debt evolution for top 10 most active users")
+        st.info("ℹ️ Showing accumulated debt balance for top 10 most active users")
 
     if selected_drinks or selected_foods:
-        st.info("ℹ️ Note: Debt evolution is not affected by drink/food filters")
+        st.info("ℹ️ Note: Debt evolution shows total accumulated balance (not affected by drink/food filters)")
 
-    # Sort by date
-    debt_df = debt_df.sort_values("Date")
+    # Filter to selected users
+    debt_evolution_df = debt_evolution_df[debt_evolution_df["Name"].isin(users_to_show)]
 
-    # For each unique date, calculate the debt snapshot
-    unique_dates = sorted(debt_df["Date"].unique())
-
-    # Build debt evolution
-    debt_evolution = []
-    for date in unique_dates:
-        date_data = debt_df[debt_df["Date"] == date]
-
-        # Get debts for this date
-        debts_snapshot = date_data.groupby("Name")["Debt"].sum().to_dict()
-
-        for user in users_to_show:
-            if user in debts_snapshot:
-                debt_evolution.append({
-                    "Date": date.date(),
-                    "Name": user,
-                    "Debt": debts_snapshot[user]
-                })
-
-    debt_evolution_df = pd.DataFrame(debt_evolution)
+    # Sort by date for proper line plotting
+    debt_evolution_df = debt_evolution_df.sort_values("Date")
 
     if not debt_evolution_df.empty:
+        # Convert date to date format for plotting
+        debt_evolution_df["Date"] = debt_evolution_df["Date"].dt.date
+
         fig_debt_evolution = px.line(
             debt_evolution_df,
             x="Date",
-            y="Debt",
+            y="AccumulatedDebt",
             color="Name",
             markers=True,
-            title="Debt Evolution Over Time"
+            title="Accumulated Debt Over Time"
         )
         fig_debt_evolution.update_layout(
             xaxis_title="Date",
-            yaxis_title="Debt (€)",
+            yaxis_title="Accumulated Debt (€)",
             hovermode="x unified"
         )
+        # Add horizontal line at y=0 to show when users are in debt vs credit
+        fig_debt_evolution.add_hline(y=0, line_dash="dash", line_color="gray", opacity=0.5)
         st.plotly_chart(fig_debt_evolution, use_container_width=True)
+
+        st.caption("💡 Positive values indicate the user owes money, negative values indicate credit/overpayment")
     else:
         st.info("No debt evolution data available for selected criteria")
 
