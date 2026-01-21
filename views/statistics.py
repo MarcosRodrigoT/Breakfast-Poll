@@ -145,6 +145,13 @@ def statistics(history_dir, whopaid_file, order_file, bar_file, machine_file, de
     )
     st.plotly_chart(fig_spending, use_container_width=True)
 
+    # Create consistent color mapping for selected users
+    user_color_map = None
+    if selected_users:
+        # Use Plotly's default color sequence
+        colors = px.colors.qualitative.Plotly
+        user_color_map = {user: colors[i % len(colors)] for i, user in enumerate(selected_users)}
+
     # If specific users selected (and not too many), show individual spending
     if selected_users and len(selected_users) <= 5:
         user_daily_spending = user_item_filtered_df.groupby([user_item_filtered_df["Date"].dt.date, "Name"])["Debt"].sum().reset_index()
@@ -156,7 +163,8 @@ def statistics(history_dir, whopaid_file, order_file, bar_file, machine_file, de
             y="Total Spent",
             color="Name",
             markers=True,
-            title="Individual User Spending"
+            title="Individual User Spending",
+            color_discrete_map=user_color_map
         )
         fig_user_spending.update_layout(
             xaxis_title="Date",
@@ -400,7 +408,8 @@ def statistics(history_dir, whopaid_file, order_file, bar_file, machine_file, de
             y="AccumulatedDebt",
             color="Name",
             markers=True,
-            title="Accumulated Debt Over Time"
+            title="Accumulated Debt Over Time",
+            color_discrete_map=user_color_map
         )
         fig_debt_evolution.update_layout(
             xaxis_title="Date",
