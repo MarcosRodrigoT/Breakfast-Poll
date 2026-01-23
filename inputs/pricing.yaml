@@ -60,10 +60,10 @@ items:
     price: 2.50
     category: "Croissant"
   "Palmera chocolate":
-    price: 1.50
+    price: 1.60
     category: "Palmera"
   "Palmera chocolate blanco":
-    price: 1.50
+    price: 1.60
     category: "Palmera"
   "Tortilla":
     price: 1.40

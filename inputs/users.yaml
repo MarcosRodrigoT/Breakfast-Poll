@@ -19,8 +19,12 @@ Enmin: 0
 Enol:
   debt: 0
   status: hidden
-Esther: 0
-Fernando: 0
+Esther:
+  debt: 0
+  status: hidden
+Fernando:
+  debt: 0
+  status: hidden
 Filippo:
   debt: 0
   status: hidden
