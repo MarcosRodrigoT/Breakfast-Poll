@@ -153,6 +153,60 @@ def save_session_to_db(timestamp, paid_by, total_price, order_df, bar_df, machin
             )
 
 
+def count_sessions():
+    with get_db() as conn:
+        return conn.execute("SELECT COUNT(*) FROM sessions").fetchone()[0]
+
+
+def load_sessions_page(offset, limit):
+    """Load `limit` sessions newest-first starting at `offset`, with all details."""
+    with get_db() as conn:
+        sessions = conn.execute(
+            "SELECT id, timestamp, paid_by, total_price FROM sessions"
+            " ORDER BY timestamp DESC LIMIT ? OFFSET ?",
+            (limit, offset),
+        ).fetchall()
+
+        result = []
+        for s in sessions:
+            sid = s["id"]
+            order_rows = conn.execute(
+                "SELECT name, drink, food, individual_debt FROM orders WHERE session_id = ?", (sid,)
+            ).fetchall()
+            bar_rows = conn.execute(
+                "SELECT item, amount FROM bar_items WHERE session_id = ?", (sid,)
+            ).fetchall()
+            machine_rows = conn.execute(
+                "SELECT item, amount FROM machine_items WHERE session_id = ?", (sid,)
+            ).fetchall()
+            debt_rows = conn.execute(
+                "SELECT name, debt FROM debt_snapshots WHERE session_id = ?", (sid,)
+            ).fetchall()
+
+            result.append({
+                "Date": s["timestamp"],
+                "Whopaid": (s["paid_by"], s["total_price"]),
+                "Order": pd.DataFrame(
+                    [(r["name"], r["drink"], r["food"], r["individual_debt"]) for r in order_rows],
+                    columns=["Name", "Drinks", "Food", "Debt"],
+                ) if order_rows else pd.DataFrame(columns=["Name", "Drinks", "Food", "Debt"]),
+                "Bar": pd.DataFrame(
+                    [(r["item"], r["amount"]) for r in bar_rows],
+                    columns=["Item", "Amount"],
+                ) if bar_rows else pd.DataFrame(columns=["Item", "Amount"]),
+                "Machine": pd.DataFrame(
+                    [(r["item"], r["amount"]) for r in machine_rows],
+                    columns=["Item", "Amount"],
+                ) if machine_rows else pd.DataFrame(columns=["Item", "Amount"]),
+                "Debts": pd.DataFrame(
+                    [(r["name"], r["debt"]) for r in debt_rows],
+                    columns=["Name", "Debt"],
+                ) if debt_rows else pd.DataFrame(columns=["Name", "Debt"]),
+            })
+
+    return result
+
+
 def load_all_sessions_from_db():
     with get_db() as conn:
         sessions = conn.execute(
