@@ -1,6 +1,6 @@
 import streamlit as st
 import plotly.express as px
-from utils import load_csv, load_users
+from utils import load_users, load_current_debts
 
 
 def debts(users_file, last_file):
@@ -15,8 +15,7 @@ def debts(users_file, last_file):
         st.session_state.new_debt = 0.0
         st.session_state.new_desc = ""
 
-    # Find the latest history directory
-    debts_data = load_csv(last_file)
+    debts_data = load_current_debts()
 
     # Sort by debt (descending - highest debt first)
     debts_data_sorted = debts_data.sort_values(by="Debt", ascending=True).reset_index(drop=True)

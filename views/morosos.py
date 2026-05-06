@@ -1,6 +1,6 @@
 import streamlit as st
 import os
-from utils import load_csv
+from utils import load_current_debts
 
 
 # TODO: As of now, the backstories are generated everyday in Atenea, and these are send to Hiperion.
@@ -13,7 +13,7 @@ def morosos(last_file):
         st.session_state.state = "Morosos"
 
     # Sort by debt
-    debts_data = load_csv(last_file)
+    debts_data = load_current_debts()
     sorted_debts = debts_data.sort_values(by="Debt", ascending=False).reset_index(drop=True)
 
     # Display generated images and backstories for all debtors

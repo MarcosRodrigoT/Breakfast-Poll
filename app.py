@@ -2,17 +2,17 @@ import os
 import subprocess
 import streamlit as st
 from views import poll, current, history, debts, morosos, statistics
-from utils import load_users, load_settleup, save_csv
+from utils import load_users, init_db, current_debts_is_empty, init_current_debts_from_yaml
 import time
 
 
 # Inputs directory
 USERS_FILE = "inputs/users.yaml"  # Users, initial debts, and description
 
-# History directory
+# History directory (kept for session-file path passing; history data lives in the DB)
 HISTORY_DIR = "history"
 os.makedirs(HISTORY_DIR, exist_ok=True)
-LST_FILE = os.path.join(HISTORY_DIR, "last.csv")  # Last debts
+LST_FILE = os.path.join(HISTORY_DIR, "last.csv")  # Legacy path, passed to functions but unused internally
 
 # Tmp directory
 TMP_DIR = "tmp"
@@ -23,13 +23,16 @@ BAR_FILE = os.path.join(TMP_DIR, "bar.csv")  # What to ask at the bar
 MAC_FILE = os.path.join(TMP_DIR, "machine.csv")  # What to put in the paying machine
 DEB_FILE = os.path.join(TMP_DIR, "debts.csv")  # Debts per user
 
+# Initialize database (idempotent: creates tables only if they don't exist)
+init_db()
+if current_debts_is_empty():
+    init_current_debts_from_yaml(USERS_FILE)
+
 # Initialize session state
 if "state" not in st.session_state:
     st.session_state.state = "Poll"
 if "users" not in st.session_state:
     st.session_state.users = load_users(USERS_FILE)
-if not os.path.isfile(LST_FILE):
-    save_csv(load_settleup(USERS_FILE), LST_FILE)
 
 # Additional paraphernalia to get the sidebar to auto-collapse
 if "sidebar_state" not in st.session_state:

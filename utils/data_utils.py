@@ -120,20 +120,5 @@ def add_user(yaml_file, new_user, new_debt, last_file):
 
 
 def add_user_to_last(last_file, new_user, new_debt):
-    # Load the existing CSV into a DataFrame
-    df = load_csv(last_file)
-
-    # Check if the user already exists
-    if new_user in df["Name"].values:
-        return False
-
-    # Add the new user
-    new_row = pd.DataFrame({"Name": [new_user], "Debt": [new_debt]})
-    df = pd.concat([df, new_row], ignore_index=True)
-
-    # Sort by the Name column alphabetically
-    df = df.sort_values(by="Name").reset_index(drop=True)
-
-    # Save the updated DataFrame back to the CSV
-    df.to_csv(last_file, index=False)
-    return True
+    from utils.db_utils import add_user_to_current_debts
+    return add_user_to_current_debts(new_user, new_debt)

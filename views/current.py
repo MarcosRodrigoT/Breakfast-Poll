@@ -1,7 +1,7 @@
 import os
 import pandas as pd
 import streamlit as st
-from utils import save_history, save_whopaid, save_order, load_order, load_csv, save_csv, ticket_logic
+from utils import save_history, save_whopaid, save_order, load_order, load_csv, save_csv, ticket_logic, load_current_debts
 
 
 def current(history_dir, whopaid_file, order_file, bar_file, machine_file, debts_file, last_file):
@@ -149,7 +149,7 @@ def current(history_dir, whopaid_file, order_file, bar_file, machine_file, debts
         st.subheader("💸 Payment")
 
         # Get historic debts
-        last_debts = load_csv(last_file)
+        last_debts = load_current_debts()
         last_debts = pd.merge(debts_ticket.drop(columns=["Debt"]), last_debts, on="Name", how="left")
         last_debts = last_debts.sort_values(by="Debt", ascending=False)
 
